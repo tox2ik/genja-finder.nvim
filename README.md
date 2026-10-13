@@ -16,6 +16,8 @@ In both pickers:
 | `<F1>` | switch between live grep and live find, keeping root, skip and search text |
 | `<M-c>` | popup with the command being run; `y` copies it |
 | `<C-p>` | toggle the preview (off by default) |
+| `<M-F>` | filter: freeze the listed results and fuzzy-match within them; again narrows further |
+| `<M-f>` | live find only: popup for a file name part (`.ahk`); lists only files whose name contains it |
 | `<M-g>` | live grep only: cycle a file filter (text, make, web, js, sys, shell, none) |
 
 ## Setup (lazy.nvim)

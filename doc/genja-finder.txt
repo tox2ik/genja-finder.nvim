@@ -29,6 +29,10 @@ CONTENTS                                               *genja-finder*
     <F1>    switch live grep <-> live find, keeping root, skip and text
     <M-c>   popup with the command being run; `y` copies it, <M-c> closes
     <C-p>   toggle the preview (off by default)
+    <M-F>   filter: fuzzy-match within the listed results on a fresh prompt;
+            again narrows further. <M-r> <M-i> <F1> <M-c> keep the search
+    <M-f>   live find only: popup for a file name part; lists only files
+            whose name contains it (case-insensitive, `*.ahk` is a glob)
     <M-g>   live grep only: cycle a file filter
 
 ==============================================================================

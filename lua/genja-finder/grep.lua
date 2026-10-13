@@ -6,7 +6,7 @@
 --
 -- In the picker:
 --
---         <M-r>, <M-i>, <F1>, <M-c>, <C-p>: see genja-finder/scope.lua (shared with live find).
+--         <M-r>, <M-i>, <F1>, <M-c>, <C-p>, <M-F>: see genja-finder/scope.lua (shared with live find).
 --         <M-g> cycle a file filter after the pattern (text > make > web > js > sys > shell > none),
 --               see `filters` in M.defaults. It is written as the backend's own flags:
 --               rg    `foo  -g *.{md,txt}`
@@ -237,11 +237,14 @@ function M.live_grep(opts)
 		previewer = conf.grep_previewer(o),
 		-- activity indicator at the end of the prompt (telescope calls this while the job runs)
 		get_status_text = function(self, st)
+			local stats = self.stats or {}
+			local hits = (stats.processed or 0) - (stats.filtered or 0)
+			if tg.filtered(self.prompt_bufnr) then -- <M-F>: fuzzy over the frozen hits
+				return ('%d of %d'):format(hits, #(self.finder.results or {}))
+			end
 			local pat = self:_get_prompt()
 			pat = pat:sub(1, (pat:find(o.separator, 1, true) or 0) - 1)
 			if #pat < o.min_chars then return ('type %d+ chars'):format(o.min_chars) end
-			local stats = self.stats or {}
-			local hits = (stats.processed or 0) - (stats.filtered or 0)
 			if st and not st.completed then return ('⟳ %d …'):format(hits) end
 			return ('%d hit%s'):format(hits, hits == 1 and '' or 's')
 		end,
@@ -249,6 +252,7 @@ function M.live_grep(opts)
 		attach_mappings = function(_, map)
 			tg.map(map, o, M.live_grep, 'find', gen)
 			map('i', '<M-g>', function(bufnr)
+				if tg.filtered(bufnr) then return end -- the prompt holds the filter, not the pattern
 				local line = tg.prompt(bufnr)
 				local pat, rest = line, ''
 				local s = line:find(o.separator, 1, true)

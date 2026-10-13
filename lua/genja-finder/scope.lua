@@ -13,6 +13,9 @@
 --         <F1>  switch between live grep and live find, keeping root, skip and the search text.
 --         <M-c> popup with the command being run; `y` copies it to the clipboard, <M-c> closes it.
 --         <C-p> toggle the preview (off by default; replaces telescope's <C-p> = previous item).
+--         <M-F> filter: freeze the listed results and fuzzy-match within them on a fresh prompt;
+--               press again to narrow further. The search moves into the prompt prefix (`foo > `).
+--               <M-r>, <M-i>, <F1> and <M-c> still act on that search, not on the filter text.
 
 ---@alias genja-finder.ScanRoot 'pwd'|'git'|'bufdir'|'home'
 ---@alias genja-finder.ScanIgnore 'gitignore+'|'vend+mods+dist'|'unrestricted'
@@ -161,11 +164,22 @@ function M.find(picker, o)
 	picker:find()
 end
 
----Current prompt text of the picker in `bufnr`, read from that prompt buffer itself
+---Search text the results were frozen with by <M-F>, by prompt buffer.
+---@type table<integer, string>
+local frozen = {}
+
+---Search text the results of the picker in `bufnr` were frozen with (<M-F>), nil when not filtered.
+---@param bufnr integer prompt buffer
+---@return string?
+function M.filtered(bufnr) return frozen[bufnr] end
+
+---Current search text of the picker in `bufnr`, read from that prompt buffer itself
 ---(not from whatever buffer is current), without the prompt prefix.
+---While filtered (<M-F>) it is the search the results were frozen with, not the filter text.
 ---@param bufnr integer prompt buffer, as passed to the mapping
 ---@return string
 function M.prompt(bufnr)
+	if frozen[bufnr] then return frozen[bufnr] end
 	local picker = require('telescope.actions.state').get_current_picker(bufnr)
 	local line = vim.api.nvim_buf_get_lines(bufnr, 0, 1, false)[1] or ''
 	local prefix = picker and picker.prompt_prefix or ''
@@ -269,10 +283,45 @@ function M.show_command(bufnr, cmd, cwd)
 	})
 end
 
+---One-line input popup in the middle of the screen, opened in insert mode with `default`.
+---<CR> calls `done(text)`, <Esc> (or leaving the popup) calls `done(nil)`. Open it after the
+---picker is closed: it takes focus.
+---@param title string
+---@param default string
+---@param done fun(text: string?)
+function M.ask(title, default, done)
+	local buf = vim.api.nvim_create_buf(false, true)
+	vim.api.nvim_buf_set_lines(buf, 0, -1, false, { default })
+	vim.bo[buf].bufhidden = 'wipe'
+	local width = math.min(vim.o.columns - 6, 50)
+	local win = vim.api.nvim_open_win(buf, true, {
+		relative = 'editor', style = 'minimal', border = 'rounded', zindex = 200,
+		title = ' ' .. title .. ' ', title_pos = 'center',
+		width = width, height = 1,
+		row = math.floor((vim.o.lines - 1) / 2) - 1,
+		col = math.floor((vim.o.columns - width) / 2),
+	})
+	local answered = false
+	local function finish(text)
+		if answered then return end
+		answered = true
+		vim.cmd.stopinsert()
+		if vim.api.nvim_win_is_valid(win) then vim.api.nvim_win_close(win, true) end
+		vim.schedule(function() done(text) end)
+	end
+	vim.keymap.set({ 'i', 'n' }, '<CR>', function()
+		finish(vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] or '')
+	end, { buffer = buf })
+	vim.keymap.set({ 'i', 'n' }, '<Esc>', function() finish(nil) end, { buffer = buf })
+	vim.api.nvim_create_autocmd('WinLeave', { buffer = buf, once = true, callback = function() finish(nil) end })
+	vim.cmd.startinsert { bang = true }
+end
+
 ---Call `o.attach(map)` first (user keys), then map the togglers below.
 ---Map <M-c>: command popup (see show_command), when `command` is given.
 ---Map <M-r> and <M-i>: each closes the picker and reopens it via `open` with the changed
 ---option, keeping the prompt text.
+---Map <M-F>: refine to a fuzzy filter over the listed results (see M.prompt, M.filtered).
 ---Map <F1>: close and open the other picker (`other`: 'grep' or 'find') with the same
 ---root, skip, origin window and search text (grep's extra args after the separator are dropped).
 ---@param map genja-finder.TelescopeMap
@@ -325,6 +374,23 @@ function M.map(map, o, open, other, command)
 	map({ 'i', 'n' }, '<M-i>', function(bufnr)
 		reopen(bufnr, { ignore = M.cycle(M.ignores, o.ignore) })
 	end, { desc = 'scan: cycle gitignore+/vend+mods+dist/unrestricted' })
+
+	map({ 'i', 'n' }, '<M-F>', function(bufnr)
+		local picker = require('telescope.actions.state').get_current_picker(bufnr)
+		if not frozen[bufnr] then
+			frozen[bufnr] = M.prompt(bufnr)
+			vim.api.nvim_create_autocmd('BufWipeout', {
+				buffer = bufnr, once = true, callback = function() frozen[bufnr] = nil end,
+			})
+		end
+		-- the typed text moves into the prompt prefix (`foo > `), so stacked filters show as `foo > bar > `
+		local conf = require('telescope.config').values
+		require('telescope.actions.generate').refine(bufnr, {
+			prompt_title = picker.prompt_title .. ' [filter]',
+			prompt_to_prefix = true,
+			sorter = o.separator and conf.generic_sorter(o) or conf.file_sorter(o), -- grep: file + line text
+		})
+	end, { desc = 'scan: filter the listed results (fuzzy, fresh prompt)' })
 end
 
 return M
