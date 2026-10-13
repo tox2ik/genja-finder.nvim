@@ -5,7 +5,7 @@ Two telescope pickers with a shared scope:
 - **live grep** (`require('genja-finder').live_grep()`): text search with rg, ack or GNU grep,
   rerun on each keystroke. Prompt: `pattern  -g *.lua` (two spaces, then backend flags).
 - **live find** (`require('genja-finder').live_find()`): fuzzy match over the file list from
-  `rg --files` or `fd`.
+  `fd` or `rg --files`.
 
 In both pickers:
 

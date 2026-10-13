@@ -1,5 +1,5 @@
 
--- genja-finder: live grep (rg/ack/grep) and live find (rg --files/fd) telescope pickers
+-- genja-finder: live grep (rg/ack/grep) and live find (fd/rg --files) telescope pickers
 -- with a shared scope: root (<M-r>), skip set (<M-i>), grep <-> find switch (<F1>),
 -- command popup (<M-c>), preview toggle (<C-p>). See :help genja-finder.
 
@@ -28,7 +28,7 @@ end
 ---@param opts? genja-finder.GrepOpts
 function M.live_grep(opts) require('genja-finder.grep').live_grep(opts) end
 
----Live find: fuzzy match over the file list from rg --files / fd.
+---Live find: fuzzy match over the file list from fd / rg --files.
 ---@param opts? genja-finder.FindOpts
 function M.live_find(opts) require('genja-finder.find').live_find(opts) end
 

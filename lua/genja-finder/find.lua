@@ -1,6 +1,6 @@
 
--- genja-finder.find (live find): custom telescope file finder, fuzzy match over the file list from rg --files or fd.
--- Backends: rg, fd (fdfind on Debian). The first one of `binary` found in PATH is used (see find_builders).
+-- genja-finder.find (live find): custom telescope file finder, fuzzy match over the file list from fd or rg --files.
+-- Backends: fd (fdfind on Debian), rg. The first one of `binary` found in PATH is used (see find_builders).
 -- Layout: ivy bottom pane like the old `Telescope finn` (tg.look; ivy = false: global layout).
 -- Preview hidden by default, <C-p> toggles it (file shown from the top).
 --
@@ -16,7 +16,7 @@ local M = {}
 ---Find-only defaults; merged over scope.defaults on each call (setup() can change both).
 ---@type genja-finder.FindOpts
 M.defaults = {
-	binary = { 'rg', 'fd', 'fdfind' },
+	binary = { 'fd', 'fdfind', 'rg' },
 	follow = false,
 }
 

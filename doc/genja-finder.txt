@@ -16,7 +16,7 @@ CONTENTS                                               *genja-finder*
     flags, which go to the backend as typed.
 
 `require('genja-finder').live_find(opts)`             *genja-finder.live_find()*
-    Fuzzy match over the file list. Backends: rg --files, fd, fdfind.
+    Fuzzy match over the file list. Backends: fd, fdfind, rg --files.
 
 `require('genja-finder').setup(opts)`                 *genja-finder.setup()*
     Merge {opts} into the defaults. Optional.
