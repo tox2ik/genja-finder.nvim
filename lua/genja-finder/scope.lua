@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-field
 
 -- genja-finder.scope: shared scope togglers for live grep (genja-finder.grep) and live find (genja-finder.find):
 -- where the scan starts (<M-r>), what it skips (<M-i>), and the titles that show both.
@@ -58,12 +59,12 @@ M.defaults = {
 
 ---@type genja-finder.ScanRoot[]
 M.roots = {
-	'pwd',    -- Neovim's working directory (:pwd), same as builtin live_grep. Scans everything below it.
-	'git',    -- shown as `…/.git`: nearest parent of the current file (or of pwd) holding .git,
-	          -- scans the whole repo even when :pwd is a subfolder. Falls back to pwd outside a repo.
+	'pwd', -- Neovim's working directory (:pwd), same as builtin live_grep. Scans everything below it.
+	'git', -- shown as `…/.git`: nearest parent of the current file (or of pwd) holding .git,
+	-- scans the whole repo even when :pwd is a subfolder. Falls back to pwd outside a repo.
 	'bufdir', -- folder of the current buffer's file: narrowest scan, that folder and below only.
-	          -- Falls back to pwd for non-file buffers (help, oil, terminal).
-	'home',   -- user home dir ($HOME): widest scan, slow without a filter or the gitignore+ skip.
+	-- Falls back to pwd for non-file buffers (help, oil, terminal).
+	'home', -- user home dir ($HOME): widest scan, slow without a filter or the gitignore+ skip.
 }
 
 ---Title text per root, where it differs from the name.
@@ -72,9 +73,9 @@ M.root_labels = { git = '…/.git' }
 
 ---@type genja-finder.ScanIgnore[]
 M.ignores = {
-	'gitignore+',     -- .gitignore/.ignore rules + `exclude` (node_modules, vendor, dist)
+	'gitignore+',  -- .gitignore/.ignore rules + `exclude` (node_modules, vendor, dist)
 	'vend+mods+dist', -- only `exclude`; .gitignore'd paths are searched (--no-ignore)
-	'unrestricted',   -- nothing excluded but .git (--no-ignore)
+	'unrestricted', -- nothing excluded but .git (--no-ignore)
 }
 
 ---Next item after `v` in `list`, wrapping around.
@@ -265,9 +266,14 @@ function M.show_command(bufnr, cmd, cwd)
 	vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 	vim.bo[buf].bufhidden = 'wipe'
 	local win = vim.api.nvim_open_win(buf, false, {
-		relative = 'editor', style = 'minimal', border = 'rounded', zindex = 200,
-		title = ' command ', title_pos = 'center',
-		width = width, height = height,
+		relative = 'editor',
+		style = 'minimal',
+		border = 'rounded',
+		zindex = 200,
+		title = ' command ',
+		title_pos = 'center',
+		width = width,
+		height = height,
 		row = math.floor((vim.o.lines - height) / 2) - 1,
 		col = math.floor((vim.o.columns - width) / 2),
 	})
@@ -345,6 +351,7 @@ function M.map(map, o, open, other, command)
 	end
 
 	if other then
+		map({ 'i', 'n' }, '<f4>', function () vim.cmd [[tabedit]] end, { desc = "Finder: new tab" })
 		map({ 'i', 'n' }, '<F1>', function(bufnr)
 			local prompt = M.prompt(bufnr)
 			if o.separator then -- grep: keep the pattern only, drop `  -g …`
@@ -375,6 +382,7 @@ function M.map(map, o, open, other, command)
 	map({ 'i', 'n' }, '<M-r>', function(bufnr)
 		reopen(bufnr, { root = M.cycle(M.roots, o.root), cwd = false })
 	end, { desc = 'scan: cycle root pwd/git/bufdir/home' })
+
 	map({ 'i', 'n' }, '<M-i>', function(bufnr)
 		reopen(bufnr, { ignore = M.cycle(M.ignores, o.ignore) })
 	end, { desc = 'scan: cycle gitignore+/vend+mods+dist/unrestricted' })
