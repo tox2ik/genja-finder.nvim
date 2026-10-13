@@ -48,7 +48,16 @@ Shared (|genja-finder.setup()| top level, or per call):
     ivy            ivy bottom pane layout             default true
     show_preview   preview visible at open            default false
     attach         fun(map): extra picker keys
+    file_ignore_patterns
+                   telescope's own filter, see below  default: global
 
+Both pickers heed telescope's global `file_ignore_patterns` (Lua patterns,
+matched anywhere in the path). They drop files after the backend ran, in every
+skip mode including unrestricted, and the <M-c> command does not show them.
+Unanchored patterns hide more than meant: `"%.a"` also drops `x.ahk`; write
+`"%.a$"`. Override for the finder only, <F1> passes it to the other picker: >lua
+    require('genja-finder').setup { file_ignore_patterns = {} } -- {} = none
+<
 `grep = {...}`: binary, backend, extra_args, separator, min_chars, filters.
 `find = {...}`: binary, backend, follow.
 

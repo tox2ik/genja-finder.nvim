@@ -37,6 +37,11 @@ In both pickers:
 }
 ```
 
+Both pickers heed telescope's global `file_ignore_patterns` (Lua patterns matched anywhere
+in the path), in every skip mode including unrestricted; the `<M-c>` command doesn't show
+them. Anchor extension patterns (`"%.a$"`, not `"%.a"`, which also hides `*.ahk`), or
+override for the finder with `file_ignore_patterns = {}` in `opts` (`<F1>` keeps it).
+
 No keys are mapped globally; map `live_grep` / `live_find` yourself. All options and
 types are in `lua/genja-finder/scope.lua` (`genja-finder.ScanOpts`), `grep.lua`
 (`genja-finder.GrepOpts`) and `find.lua` (`genja-finder.FindOpts`). See `:help genja-finder`.

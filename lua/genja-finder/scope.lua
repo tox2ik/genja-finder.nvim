@@ -33,6 +33,9 @@
 ---@field ignore? genja-finder.ScanIgnore what is excluded from the scan (default 'gitignore+')
 ---@field exclude? string[]        names excluded in 'gitignore+' and 'vend+mods+dist' (default node_modules, vendor, dist)
 ---@field exclude_files? string[]  file globs excluded in the same states (default *.min.js, *.min.css)
+---@field file_ignore_patterns? string[] telescope's own filter: Lua patterns matched anywhere in the path, applied
+---                                after the backend in every skip mode (also unrestricted; not shown by <M-c>).
+---                                Unset: telescope's global file_ignore_patterns. {} turns it off.
 ---@field default_text? string     initial prompt
 ---@field ivy? boolean             ivy bottom pane layout, the old finn look (default true)
 ---@field show_preview? boolean    show the preview when the picker opens (default false, <C-p> toggles)
@@ -323,7 +326,7 @@ end
 ---option, keeping the prompt text.
 ---Map <M-F>: refine to a fuzzy filter over the listed results (see M.prompt, M.filtered).
 ---Map <F1>: close and open the other picker (`other`: 'grep' or 'find') with the same
----root, skip, origin window and search text (grep's extra args after the separator are dropped).
+---root, skip, file_ignore_patterns, origin window and search text (grep's extra args after the separator are dropped).
 ---@param map genja-finder.TelescopeMap
 ---@param o genja-finder.ScanOpts
 ---@param open fun(opts: genja-finder.ScanOpts) the picker function itself (live_grep, live_find)
@@ -352,6 +355,7 @@ function M.map(map, o, open, other, command)
 				M.switch[other]() {
 					root = o.root, ignore = o.ignore, hidden = o.hidden, exclude = o.exclude, exclude_files = o.exclude_files,
 					ivy = o.ivy, show_preview = o.show_preview, origin_win = o.origin_win, origin_pwd = o.origin_pwd, default_text = prompt,
+					file_ignore_patterns = o.file_ignore_patterns,
 				}
 			end)
 		end, { desc = 'scan: switch between live grep and find' })
