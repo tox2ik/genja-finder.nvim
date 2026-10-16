@@ -13,8 +13,10 @@
 --               treat gitignore+ as vend+mods+dist.
 --         <F1>  switch between live grep and live find, keeping root, skip and the search text.
 --         <M-c> popup with the command being run; `y` copies it to the clipboard, <M-c> closes it.
+--         <M-C> reopen with the next command in `binary` (rg > ack > grep, es > locate > fd > …),
+--               skipping ones not in PATH or not ready; wraps around.
 --         <C-p> toggle the preview (off by default; replaces telescope's <C-p> = previous item).
---         <M-F> filter: freeze the listed results and fuzzy-match within them on a fresh prompt;
+--         <M-f> filter: freeze the listed results and fuzzy-match within them on a fresh prompt;
 --               press again to narrow further. The search moves into the prompt prefix (`foo > `).
 --               <M-r>, <M-i>, <F1> and <M-c> still act on that search, not on the filter text.
 
@@ -28,6 +30,7 @@
 ---@class genja-finder.ScanOpts
 ---@field binary? string|string[]  binaries tried in PATH, first found wins
 ---@field backend? string          builder to use, if the binary name isn't a known one
+---@field bin? string              binary in use, name without extension (set internally, for <M-C>)
 ---@field root? genja-finder.ScanRoot     where the scan starts (default 'pwd')
 ---@field cwd? string|false        explicit directory, overrides root
 ---@field hidden? boolean          include dotfiles (default true)
@@ -90,19 +93,44 @@ function M.cycle(list, v)
 	return list[1]
 end
 
----First binary of `bins` found in PATH.
+---First binary of `bins` found in PATH (and accepted by `usable`, when given).
 ---@param bins string|string[]
+---@param usable? fun(exe: string, name: string): boolean false skips to the next binary
 ---@return string? exe full path
 ---@return string? name binary without dir and extension
-function M.find_binary(bins)
+function M.find_binary(bins, usable)
 	local list = bins
 	if type(bins) == 'string' then
 		list = { bins }
 	end
 	for _, b in ipairs(list) do
 		local exe = vim.fn.exepath(b)
-		if exe ~= '' then return exe, vim.fn.fnamemodify(b, ':t:r') end
+		if exe ~= '' then
+			local name = vim.fn.fnamemodify(b, ':t:r')
+			if not usable or usable(exe, name) then return exe, name end
+		end
 	end
+end
+
+---`bins` reordered to start after `name`, so find_binary tries the next one first (<M-C>).
+---Missing or not ready binaries are skipped by find_binary as usual.
+---@param bins string|string[]
+---@param name? string binary in use, without dir and extension
+---@return string[]
+function M.after(bins, name)
+	local list = bins
+	if type(bins) == 'string' then
+		list = { bins }
+	end
+	local at = 0
+	for i, b in ipairs(list) do
+		if vim.fn.fnamemodify(b, ':t:r') == name then at = i end
+	end
+	local out = {}
+	for k = 1, #list do
+		out[k] = list[(at + k - 1) % #list + 1]
+	end
+	return out
 end
 
 ---Scan dir for `root`, seen from window `win` (its :pwd and its buffer).
@@ -168,18 +196,18 @@ function M.find(picker, o)
 	picker:find()
 end
 
----Search text the results were frozen with by <M-F>, by prompt buffer.
+---Search text the results were frozen with by <M-f>, by prompt buffer.
 ---@type table<integer, string>
 local frozen = {}
 
----Search text the results of the picker in `bufnr` were frozen with (<M-F>), nil when not filtered.
+---Search text the results of the picker in `bufnr` were frozen with (<M-f>), nil when not filtered.
 ---@param bufnr integer prompt buffer
 ---@return string?
 function M.filtered(bufnr) return frozen[bufnr] end
 
 ---Current search text of the picker in `bufnr`, read from that prompt buffer itself
 ---(not from whatever buffer is current), without the prompt prefix.
----While filtered (<M-F>) it is the search the results were frozen with, not the filter text.
+---While filtered (<M-f>) it is the search the results were frozen with, not the filter text.
 ---@param bufnr integer prompt buffer, as passed to the mapping
 ---@return string
 function M.prompt(bufnr)
@@ -328,9 +356,9 @@ end
 
 ---Call `o.attach(map)` first (user keys), then map the togglers below.
 ---Map <M-c>: command popup (see show_command), when `command` is given.
----Map <M-r> and <M-i>: each closes the picker and reopens it via `open` with the changed
----option, keeping the prompt text.
----Map <M-F>: refine to a fuzzy filter over the listed results (see M.prompt, M.filtered).
+---Map <M-r>, <M-i> and <M-C>: each closes the picker and reopens it via `open` with the changed
+---option (root, skip, next binary), keeping the prompt text.
+---Map <M-f>: refine to a fuzzy filter over the listed results (see M.prompt, M.filtered).
 ---Map <F1>: close and open the other picker (`other`: 'grep' or 'find') with the same
 ---root, skip, file_ignore_patterns, origin window and search text (grep's extra args after the separator are dropped).
 ---@param map genja-finder.TelescopeMap
@@ -374,6 +402,10 @@ function M.map(map, o, open, other, command)
 		end, { desc = 'scan: show command (y copies)' })
 	end
 
+	map({ 'i', 'n' }, '<M-C>', function(bufnr)
+		reopen(bufnr, { binary = M.after(o.binary, o.bin) })
+	end, { desc = 'scan: next command in the binary list' })
+
 	map({ 'i', 'n' }, '<C-p>', function(bufnr)
 		o.show_preview = not o.show_preview -- remembered for <M-r>/<M-i> reopen and <F1> switch
 		require('telescope.actions.layout').toggle_preview(bufnr)
@@ -387,7 +419,7 @@ function M.map(map, o, open, other, command)
 		reopen(bufnr, { ignore = M.cycle(M.ignores, o.ignore) })
 	end, { desc = 'scan: cycle gitignore+/vend+mods+dist/unrestricted' })
 
-	map({ 'i', 'n' }, '<M-F>', function(bufnr)
+	map({ 'i', 'n' }, '<M-f>', function(bufnr)
 		local picker = require('telescope.actions.state').get_current_picker(bufnr)
 		if not frozen[bufnr] then
 			frozen[bufnr] = M.prompt(bufnr)

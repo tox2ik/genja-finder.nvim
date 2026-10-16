@@ -6,7 +6,7 @@
 --
 -- In the picker:
 --
---         <M-r>, <M-i>, <F1>, <M-c>, <C-p>, <M-F>: see genja-finder/scope.lua (shared with live find).
+--         <M-r>, <M-i>, <F1>, <M-c>, <M-C>, <C-p>, <M-f>: see genja-finder/scope.lua (shared with live find).
 --         <M-g> cycle a file filter after the pattern (text > make > web > js > sys > shell > none),
 --               see `filters` in M.defaults. It is written as the backend's own flags:
 --               rg    `foo  -g *.{md,txt}`
@@ -208,6 +208,7 @@ function M.live_grep(opts)
 		vim.notify('genja-finder: none of ' .. vim.inspect(o.binary) .. ' found in PATH', vim.log.levels.ERROR)
 		return
 	end
+	o.bin = name
 	local b = grep_builders[o.backend or name]
 	if not b then
 		vim.notify('genja-finder: no command builder for ' .. name .. ', set opts.backend', vim.log.levels.ERROR)
@@ -239,7 +240,7 @@ function M.live_grep(opts)
 		get_status_text = function(self, st)
 			local stats = self.stats or {}
 			local hits = (stats.processed or 0) - (stats.filtered or 0)
-			if tg.filtered(self.prompt_bufnr) then -- <M-F>: fuzzy over the frozen hits
+			if tg.filtered(self.prompt_bufnr) then -- <M-f>: fuzzy over the frozen hits
 				return ('%d of %d'):format(hits, #(self.finder.results or {}))
 			end
 			local pat = self:_get_prompt()

@@ -4,8 +4,10 @@ Two telescope pickers with a shared scope:
 
 - **live grep** (`require('genja-finder').live_grep()`): text search with rg, ack or GNU grep,
   rerun on each keystroke. Prompt: `pattern  -g *.lua` (two spaces, then backend flags).
-- **live find** (`require('genja-finder').live_find()`): fuzzy match over the file list from
-  `fd` or `rg --files`.
+- **live find** (`require('genja-finder').live_find()`): files by name. With `es` (Everything,
+  Windows, only while Everything runs) or `locate` (Linux) the index is queried on each keystroke
+  (2+ characters, at most 15000 paths; es takes Everything's search syntax). Otherwise fuzzy match
+  over the file list from `fd` or `rg --files`.
 
 In both pickers:
 
@@ -15,9 +17,10 @@ In both pickers:
 | `<M-i>` | cycle what is skipped: gitignore+ > vend+mods+dist > unrestricted |
 | `<F1>` | switch between live grep and live find, keeping root, skip and search text |
 | `<M-c>` | popup with the command being run; `y` copies it |
+| `<M-C>` | reopen with the next command in the binary list (skips missing or not ready ones) |
 | `<C-p>` | toggle the preview (off by default) |
-| `<M-F>` | filter: freeze the listed results and fuzzy-match within them; again narrows further |
-| `<M-f>` | live find only: popup for a file name part (`.ahk`); lists only files whose name contains it |
+| `<M-f>` | filter: freeze the listed results and fuzzy-match within them; again narrows further |
+| `<M-F>` | live find only: popup for a file name part (`.ahk`); lists only files whose name contains it |
 | `<M-g>` | live grep only: cycle a file filter (text, make, web, js, sys, shell, none) |
 
 ## Setup (lazy.nvim)
@@ -31,7 +34,7 @@ In both pickers:
 		exclude_files = { '*.min.js', '*.min.css' },
 		attach = function(map) --[[ extra picker keys ]] end,
 		grep = { min_chars = 2 },
-		find = { follow = false },
+		find = { follow = false, min_chars = 2, max_results = 15000 },
 	},
 	config = function(_, opts) require('genja-finder').setup(opts) end,
 }

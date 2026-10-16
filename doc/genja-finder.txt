@@ -16,7 +16,11 @@ CONTENTS                                               *genja-finder*
     flags, which go to the backend as typed.
 
 `require('genja-finder').live_find(opts)`             *genja-finder.live_find()*
-    Fuzzy match over the file list. Backends: fd, fdfind, rg --files.
+    Files by name. Backends, first found and ready: es, locate, fd, fdfind,
+    rg --files. es (Everything) and locate query their index on each
+    keystroke, from `min_chars` on, at most `max_results` paths; es is
+    skipped when Everything isn't running and takes Everything's search
+    syntax (`ext:lua`). fd and rg list once and fuzzy match.
 
 `require('genja-finder').setup(opts)`                 *genja-finder.setup()*
     Merge {opts} into the defaults. Optional.
@@ -28,10 +32,12 @@ CONTENTS                                               *genja-finder*
     <M-i>   cycle skip set: gitignore+, vend+mods+dist, unrestricted
     <F1>    switch live grep <-> live find, keeping root, skip and text
     <M-c>   popup with the command being run; `y` copies it, <M-c> closes
+    <M-C>   reopen with the next command in `binary`, skipping missing or
+            not ready ones; wraps around
     <C-p>   toggle the preview (off by default)
-    <M-F>   filter: fuzzy-match within the listed results on a fresh prompt;
+    <M-f>   filter: fuzzy-match within the listed results on a fresh prompt;
             again narrows further. <M-r> <M-i> <F1> <M-c> keep the search
-    <M-f>   live find only: popup for a file name part; lists only files
+    <M-F>   live find only: popup for a file name part; lists only files
             whose name contains it (case-insensitive, `*.ahk` is a glob)
     <M-g>   live grep only: cycle a file filter
 
@@ -59,6 +65,6 @@ Unanchored patterns hide more than meant: `"%.a"` also drops `x.ahk`; write
     require('genja-finder').setup { file_ignore_patterns = {} } -- {} = none
 <
 `grep = {...}`: binary, backend, extra_args, separator, min_chars, filters.
-`find = {...}`: binary, backend, follow.
+`find = {...}`: binary, backend, follow, min_chars (2), max_results (15000).
 
  vim:tw=78:ts=8:ft=help:norl:

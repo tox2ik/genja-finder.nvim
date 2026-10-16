@@ -1,7 +1,7 @@
 
 -- genja-finder: live grep (rg/ack/grep) and live find (fd/rg --files) telescope pickers
 -- with a shared scope: root (<M-r>), skip set (<M-i>), grep <-> find switch (<F1>),
--- command popup (<M-c>), preview toggle (<C-p>). See :help genja-finder.
+-- command popup (<M-c>), next command (<M-C>), preview toggle (<C-p>). See :help genja-finder.
 
 ---setup() options: the shared scan options, plus per-picker defaults.
 ---@class genja-finder.Opts : genja-finder.ScanOpts
