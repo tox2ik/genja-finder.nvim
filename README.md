@@ -13,9 +13,9 @@ In both pickers:
 
 | key | does |
 |---|---|
-| `<M-r>` | cycle where the scan starts: pwd > …/.git > bufdir > home |
+| `<M-r>` | cycle where the scan starts: pwd > …/.git > bufdir > home; a `cwd` passed to the picker is `arg`, first in the cycle |
 | `<M-i>` | cycle what is skipped: gitignore+ > vend+mods+dist > unrestricted |
-| `<F1>` | switch between live grep and live find, keeping root, skip and search text |
+| `<F1>` | switch between live grep and live find, keeping root (and an explicit `cwd`), skip and search text |
 | `<M-c>` | popup with the command being run; `y` copies it |
 | `<M-C>` | reopen with the next command in the binary list (skips missing or not ready ones) |
 | `<C-p>` | toggle the preview (off by default) |

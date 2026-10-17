@@ -28,9 +28,10 @@ CONTENTS                                               *genja-finder*
 ==============================================================================
 2. Keys                                                *genja-finder-keys*
 
-    <M-r>   cycle root: pwd, …/.git, bufdir, home
+    <M-r>   cycle root: pwd, …/.git, bufdir, home (and arg, first, when a
+            cwd was passed)
     <M-i>   cycle skip set: gitignore+, vend+mods+dist, unrestricted
-    <F1>    switch live grep <-> live find, keeping root, skip and text
+    <F1>    switch live grep <-> live find, keeping root (or cwd), skip and text
     <M-c>   popup with the command being run; `y` copies it, <M-c> closes
     <M-C>   reopen with the next command in `binary`, skipping missing or
             not ready ones; wraps around
@@ -47,6 +48,8 @@ CONTENTS                                               *genja-finder*
 Shared (|genja-finder.setup()| top level, or per call):
 
     root           'pwd'|'git'|'bufdir'|'home'        default 'pwd'
+    cwd            directory to scan; shown as root 'arg' and kept in the
+                   <M-r> cycle
     ignore         'gitignore+'|'vend+mods+dist'|'unrestricted'
     exclude        dir names skipped (node_modules, vendor, dist)
     exclude_files  file globs skipped (*.min.js, *.min.css)
