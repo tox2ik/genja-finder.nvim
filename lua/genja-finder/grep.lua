@@ -226,7 +226,7 @@ function M.live_grep(opts)
 			return vimgrep(f and (f .. ':' .. l .. ':1:' .. t) or line)
 		end
 	end
-	local prompt_title, results_title = tg.titles(o, 'recurseinteractive ' .. vim.fn.fnamemodify(exe, ':t:r') .. ' text-scan')
+	local prompt_title, results_title = tg.titles(o, 'grepish ' .. vim.fn.fnamemodify(exe, ':t:r') .. ' text-scan')
 
 	local gen = grep_command_generator(b, exe, o)
 
