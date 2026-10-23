@@ -2,7 +2,7 @@
 -- genja-finder: live grep (rg/ack/grep) and live find (fd/rg --files) telescope pickers
 -- with a shared scope: root (<M-r>), skip set (<M-i>), grep <-> find switch (<F1>),
 -- command popup (<M-c>), next command (<M-C>), preview toggle (<C-p>). See :help genja-finder.
--- Also for any picker: attach(map) and enhance(picker) add Telemap's keys and the <M-f> filter.
+-- Also for any picker: attach_shared_keys(map) and enhance(picker) add Telemap's keys and the <M-f> filter.
 
 ---setup() options: the shared scan options, plus per-picker defaults.
 ---@class genja-finder.Opts : genja-finder.ScanOpts
@@ -35,17 +35,17 @@ function M.live_find(opts) require('genja-finder.find').live_find(opts) end
 
 ---Shared keys for any picker's attach_mappings: Telemap (<esc>, <F2>/<F3>) and refine (<M-f>).
 ---@param map genja-finder.TelescopeMap
-function M.attach(map)
+function M.attach_shared_keys(map)
 	require('genja-finder.telemap').Telemap(map)
 	require('genja-finder.refine').attach(map)
 end
 
----Wrap a picker function so it opens with M.attach's keys, e.g. enhance(builtin.oldfiles).
----Works for pickers that pass their opts to pickers.new; others call M.attach(map) themselves.
+---Wrap a picker function so it opens with M.attach_shared_keys's keys, e.g. enhance(builtin.oldfiles).
+---Works for pickers that pass their opts to pickers.new; others call M.attach_shared_keys(map) themselves.
 ---@param picker fun(opts?: table)
 ---@return fun(opts?: table)
 function M.enhance(picker)
-	return require('genja-finder.refine').decorate(picker, M.attach)
+	return require('genja-finder.refine').decorate(picker, M.attach_shared_keys)
 end
 
 return M

@@ -1,6 +1,6 @@
 -- genja-finder.telemap: shared picker keys for any telescope picker (moved here from the config's
 -- lua/genja/fn/telemap.lua). Use from attach_mappings: require('genja-finder.telemap').Telemap(map).
--- require('genja-finder').attach(map) maps these plus the refine keys (genja-finder.refine).
+-- require('genja-finder').attach_shared_keys(map) maps these plus the refine keys (genja-finder.refine).
 
 ---Shared picker keys: <esc> closes, <F2>/<F3> move the selection.
 ---@param map genja-finder.TelescopeMap

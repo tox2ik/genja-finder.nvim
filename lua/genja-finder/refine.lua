@@ -5,7 +5,7 @@
 --
 -- In a picker's attach_mappings:  require('genja-finder.refine').attach(map)
 -- Around a picker function:       require('genja-finder.refine').decorate(builtin.oldfiles)
--- Both with Telemap's keys:       require('genja-finder').attach(map) / .enhance(picker)
+-- Both with Telemap's keys:       require('genja-finder').attach_shared_keys(map) / .enhance(picker)
 
 local M = {}
 

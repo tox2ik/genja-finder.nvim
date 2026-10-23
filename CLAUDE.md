@@ -18,14 +18,14 @@ code or history: confirm or delete. `Hint:` is a working note for Claude.
 - `find.lua`: file list command per backend.
 - `refine.lua`: `<M-f>` filter for any picker (`filter`, `attach(map)`), `decorate(picker, attach?)`; holds the frozen search (`filtered`).
 - `telemap.lua`: `Telemap(map)`, the shared picker keys (`<esc>`, `<F2>`/`<F3>`), moved here from the config's `lua/genja/fn/telemap.lua`.
-- `init.lua` `attach(map)` = Telemap + refine keys; `enhance(picker)` = `decorate(picker, attach)`, for pickers elsewhere in the config.
+- `init.lua` `attach_shared_keys(map)` = Telemap + refine keys; `enhance(picker)` = `decorate(picker, attach_shared_keys)`, for pickers elsewhere in the config.
 - Option or key changes go into README.md and `doc/genja-finder.txt` too.
 
 ## Scope of the plugin
 
 - Live grep and live find, plus reusable picker keys: `Telemap` and the refine decorator. Telescope extensions (finn, mycolors, mydirs, mylunsj, undersort) stay in the config.
 - The plugin must not require `genja.*`; the config passes extra picker keys through the `attach(map)` option (Telemap).
-- The decorator wraps any picker that passes its opts to `pickers.new`; pickers that don't call `attach(map)` in their own attach_mappings.
+- The decorator wraps any picker that passes its opts to `pickers.new`; pickers that don't call `attach_shared_keys(map)` in their own attach_mappings (the config's f2 pickers, ui-select, mylunsj do).
 - Mappings stay in the config.
 
 ## Backends
