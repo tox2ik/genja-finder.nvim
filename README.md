@@ -23,6 +23,18 @@ In both pickers:
 | `<M-F>` | live find only: popup for a file name part (`.ahk`); lists only files whose name contains it |
 | `<M-g>` | live grep only: cycle a file filter (text, make, web, js, sys, shell, none) |
 
+For any other telescope picker:
+
+| call | does |
+|---|---|
+| `require('genja-finder').attach(map)` | in a picker's `attach_mappings`: Telemap keys (`<esc>`, `<F2>`/`<F3>`) and `<M-f>` filter |
+| `require('genja-finder').enhance(picker)` | wraps a picker function with those keys, e.g. `enhance(require('telescope.builtin').oldfiles)` |
+| `require('genja-finder.refine').decorate(picker, attach?)` | the same with your own keys (default: `<M-f>` only) |
+| `require('genja-finder.telemap').Telemap(map)` | Telemap keys only |
+
+`enhance` and `decorate` set `opts.attach_mappings`; telescope runs it after the picker's own. A picker
+that doesn't pass its opts to `pickers.new` gets nothing; call `attach(map)` inside it.
+
 ## Setup (lazy.nvim)
 
 ```lua

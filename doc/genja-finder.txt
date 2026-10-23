@@ -25,6 +25,25 @@ CONTENTS                                               *genja-finder*
 `require('genja-finder').setup(opts)`                 *genja-finder.setup()*
     Merge {opts} into the defaults. Optional.
 
+`require('genja-finder').attach(map)`                 *genja-finder.attach()*
+    For any picker's attach_mappings: Telemap keys (<esc> close, <F2>/<F3>
+    next/previous) and <M-f> filter.
+
+`require('genja-finder').enhance(picker)`             *genja-finder.enhance()*
+    Wrap a picker function so it opens with the keys of
+    |genja-finder.attach()|: >lua
+    require('genja-finder').enhance(require('telescope.builtin').oldfiles)()
+<   Sets `opts.attach_mappings`; telescope runs it after the picker's own.
+    A picker that doesn't pass its opts to pickers.new gets nothing.
+
+`require('genja-finder.refine').decorate(picker, attach)`
+                                                *genja-finder.decorate()*
+    Like |genja-finder.enhance()| with your own `attach(map)`; default:
+    <M-f> only (`require('genja-finder.refine').attach`).
+
+`require('genja-finder.telemap').Telemap(map)`        *genja-finder.Telemap()*
+    Telemap keys only.
+
 ==============================================================================
 2. Keys                                                *genja-finder-keys*
 

@@ -219,14 +219,10 @@ function M.find(picker, o)
 	picker:find()
 end
 
----Search text the results were frozen with by <M-f>, by prompt buffer.
----@type table<integer, string>
-local frozen = {}
-
 ---Search text the results of the picker in `bufnr` were frozen with (<M-f>), nil when not filtered.
 ---@param bufnr integer prompt buffer
 ---@return string?
-function M.filtered(bufnr) return frozen[bufnr] end
+function M.filtered(bufnr) return require('genja-finder.refine').filtered(bufnr) end
 
 ---Current search text of the picker in `bufnr`, read from that prompt buffer itself
 ---(not from whatever buffer is current), without the prompt prefix.
@@ -234,12 +230,12 @@ function M.filtered(bufnr) return frozen[bufnr] end
 ---@param bufnr integer prompt buffer, as passed to the mapping
 ---@return string
 function M.prompt(bufnr)
-	if frozen[bufnr] then return frozen[bufnr] end
-	local picker = require('telescope.actions.state').get_current_picker(bufnr)
-	local line = vim.api.nvim_buf_get_lines(bufnr, 0, 1, false)[1] or ''
-	local prefix = picker and picker.prompt_prefix or ''
-	if prefix ~= '' and line:sub(1, #prefix) == prefix then line = line:sub(#prefix + 1) end
-	return line
+	local refine = require('genja-finder.refine')
+	local search = refine.filtered(bufnr)
+	if search then
+		return search
+	end
+	return refine.text(bufnr)
 end
 
 ---Same directory, ignoring slash style, a trailing slash and (on Windows) case.
@@ -415,7 +411,7 @@ end
 ---Map <M-c>: command popup (see show_command), when `command` is given.
 ---Map <M-r>, <M-i> and <M-C>: each closes the picker and reopens it via `open` with the changed
 ---option (root, skip, next binary), keeping the prompt text.
----Map <M-f>: refine to a fuzzy filter over the listed results (see M.prompt, M.filtered).
+---Map <M-f>: refine to a fuzzy filter over the listed results (genja-finder.refine; see M.prompt, M.filtered).
 ---Map <F1>: close and open the other picker (`other`: 'grep' or 'find') with the same
 ---root, skip, file_ignore_patterns, origin window and search text (grep's extra args after the separator are dropped).
 ---@param map genja-finder.TelescopeMap
@@ -477,21 +473,14 @@ function M.map(map, o, open, other, command)
 		reopen(bufnr, { ignore = M.cycle(M.ignores, o.ignore) })
 	end, { desc = 'scan: cycle gitignore+/vend+mods+dist/unrestricted' })
 
+	-- genja-finder.refine's filter, with a sorter per picker
 	map({ 'i', 'n' }, '<M-f>', function(bufnr)
-		local picker = require('telescope.actions.state').get_current_picker(bufnr)
-		if not frozen[bufnr] then
-			frozen[bufnr] = M.prompt(bufnr)
-			vim.api.nvim_create_autocmd('BufWipeout', {
-				buffer = bufnr, once = true, callback = function() frozen[bufnr] = nil end,
-			})
-		end
-		-- the typed text moves into the prompt prefix (`foo > `), so stacked filters show as `foo > bar > `
 		local conf = require('telescope.config').values
-		require('telescope.actions.generate').refine(bufnr, {
-			prompt_title = picker.prompt_title .. ' [filter]',
-			prompt_to_prefix = true,
-			sorter = o.separator and conf.generic_sorter(o) or conf.file_sorter(o), -- grep: file + line text
-		})
+		local sorter = conf.file_sorter(o)
+		if o.separator then -- grep: file + line text
+			sorter = conf.generic_sorter(o)
+		end
+		require('genja-finder.refine').filter(bufnr, sorter)
 	end, { desc = 'scan: filter the listed results (fuzzy, fresh prompt)' })
 end
 
