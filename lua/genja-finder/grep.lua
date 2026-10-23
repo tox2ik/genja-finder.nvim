@@ -15,6 +15,8 @@
 --               Other extra args you typed after the filter are kept. Filters by hand work the same:
 --               rg `-g !*.min.js` skips files, grep has --exclude=GLOB, `ack --help-types` lists ack types.
 
+local SRC = 'genja-finder/grep.lua: '
+
 local tg = require 'genja-finder.scope'
 
 ---A named set of file globs, cycled with <M-g>.
@@ -205,13 +207,13 @@ function M.live_grep(opts)
 	local o = vim.tbl_extend('force', tg.defaults, M.defaults, opts or {})
 	local exe, name = tg.find_binary(o.binary)
 	if not exe then
-		vim.notify('genja-finder: none of ' .. vim.inspect(o.binary) .. ' found in PATH', vim.log.levels.ERROR)
+		vim.notify(SRC .. 'none of ' .. vim.inspect(o.binary) .. ' found in PATH', vim.log.levels.ERROR)
 		return
 	end
 	o.bin = name
 	local b = grep_builders[o.backend or name]
 	if not b then
-		vim.notify('genja-finder: no command builder for ' .. name .. ', set opts.backend', vim.log.levels.ERROR)
+		vim.notify(SRC .. 'no command builder for ' .. name .. ', set opts.backend', vim.log.levels.ERROR)
 		return
 	end
 

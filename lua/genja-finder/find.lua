@@ -15,6 +15,8 @@
 --               paths: `.ahk` lists only the *.ahk files. With * ? or [ it is a glob as typed (`*.ahk`).
 --               Empty input lists everything again. Shown as `name:<part>` in the results title.
 
+local SRC = 'genja-finder/find.lua: '
+
 local tg = require 'genja-finder.scope'
 
 ---@class genja-finder.FindOpts : genja-finder.ScanOpts
@@ -173,14 +175,14 @@ function M.live_find(opts)
 		return true
 	end)
 	if not exe then
-		vim.notify('genja-finder: none of ' .. vim.inspect(o.binary) .. ' found in PATH (or ready)', vim.log.levels.ERROR)
+		vim.notify(SRC .. 'none of ' .. vim.inspect(o.binary) .. ' found in PATH (or ready)', vim.log.levels.ERROR)
 		return
 	end
 	o.bin = name
 	local live = live_builders[o.backend or name]
 	local build = find_builders[o.backend or name]
 	if not live and not build then
-		vim.notify('genja-finder: no command builder for ' .. name .. ', set opts.backend', vim.log.levels.ERROR)
+		vim.notify(SRC .. 'no command builder for ' .. name .. ', set opts.backend', vim.log.levels.ERROR)
 		return
 	end
 	tg.prepare(o)

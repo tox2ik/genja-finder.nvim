@@ -10,6 +10,8 @@
 -- Around a picker function:       require('genja-finder.refine').decorate(builtin.oldfiles)
 -- Both with Telemap's keys:       require('genja-finder').attach_shared_keys(map) / .enhance(picker)
 
+local SRC = 'genja-finder/refine.lua: '
+
 local M = {}
 
 ---One <M-f> step: what the picker had before it, restored by <BS> (M.undo).
@@ -235,7 +237,7 @@ function M.attach(map, opts)
 
 	map({ 'i', 'n' }, '<M-n>', function(bufnr)
 		if opts.exact_allowed and not opts.exact_allowed(bufnr) then
-			vim.notify('genja-finder: exact match works on filtered results; press <M-f> first', vim.log.levels.INFO)
+			vim.notify(SRC .. 'exact match works on filtered results; press <M-f> first', vim.log.levels.INFO)
 			return
 		end
 		M.toggle_exact(bufnr, opts.sorter)
