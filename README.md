@@ -21,6 +21,7 @@ In both pickers:
 | `<C-p>` | toggle the preview (off by default) |
 | `<M-f>` | filter: freeze the listed results and fuzzy-match within them; again narrows further |
 | `<BS>` | on an empty prompt: undo the last `<M-f>`, back to its results and text |
+| `<M-n>` | switch between fuzzy and exact match (each word as typed); new `<M-f>` steps keep the mode; live grep: after `<M-f>` only |
 | `<M-F>` | live find only: popup for a file name part (`.ahk`); lists only files whose name contains it |
 | `<M-g>` | live grep only: cycle a file filter (text, make, web, js, sys, shell, none) |
 
@@ -28,7 +29,7 @@ For any other telescope picker:
 
 | call | does |
 |---|---|
-| `require('genja-finder').attach_shared_keys(map)` | in a picker's `attach_mappings`: Telemap keys (`<esc>`, `<F2>`/`<F3>`), `<M-f>` filter and `<BS>` undo |
+| `require('genja-finder').attach_shared_keys(map)` | in a picker's `attach_mappings`: Telemap keys (`<esc>`, `<F2>`/`<F3>`), `<M-f>` filter, `<BS>` undo, `<M-n>` exact match |
 | `require('genja-finder').enhance(picker)` | wraps a picker function with those keys, e.g. `enhance(require('telescope.builtin').oldfiles)` |
 | `require('genja-finder.refine').decorate(picker, attach?)` | the same with your own keys (default: `<M-f>` only) |
 | `require('genja-finder.telemap').Telemap(map)` | Telemap keys only |

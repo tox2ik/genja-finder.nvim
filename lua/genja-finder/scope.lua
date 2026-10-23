@@ -21,6 +21,7 @@
 --               press again to narrow further. The search moves into the prompt prefix (`foo > `).
 --               <M-r>, <M-i>, <F1> and <M-c> still act on that search, not on the filter text.
 --         <BS>  on an empty prompt: undo the last <M-f>.
+--         <M-n> switch between fuzzy and exact match (grep: after <M-f> only).
 
 ---@alias genja-finder.ScanRoot 'pwd'|'git'|'bufdir'|'home'|'arg'
 ---@alias genja-finder.ScanIgnore 'gitignore+'|'vend+mods+dist'|'unrestricted'
@@ -412,7 +413,7 @@ end
 ---Map <M-c>: command popup (see show_command), when `command` is given.
 ---Map <M-r>, <M-i> and <M-C>: each closes the picker and reopens it via `open` with the changed
 ---option (root, skip, next binary), keeping the prompt text.
----Map <M-f>: refine to a fuzzy filter over the listed results, <BS> on an empty prompt undoes it
+---Map <M-f>: refine to a filter over the listed results, <BS> on an empty prompt undoes it, <M-n> exact match
 ---(genja-finder.refine; see M.prompt, M.filtered).
 ---Map <F1>: close and open the other picker (`other`: 'grep' or 'find') with the same
 ---root, skip, file_ignore_patterns, origin window and search text (grep's extra args after the separator are dropped).
@@ -475,14 +476,24 @@ function M.map(map, o, open, other, command)
 		reopen(bufnr, { ignore = M.cycle(M.ignores, o.ignore) })
 	end, { desc = 'scan: cycle gitignore+/vend+mods+dist/unrestricted' })
 
-	-- genja-finder.refine's <M-f> filter and <BS> undo, with a sorter per picker
-	require('genja-finder.refine').attach(map, function()
-		local conf = require('telescope.config').values
-		if o.separator then -- grep: file + line text
-			return conf.generic_sorter(o)
-		end
-		return conf.file_sorter(o)
-	end)
+	-- genja-finder.refine's <M-f> filter, <BS> undo and <M-n> exact match, with a sorter per picker
+	local refine = require('genja-finder.refine')
+	refine.attach(map, {
+		sorter = function()
+			local conf = require('telescope.config').values
+			if o.separator then -- grep: file + line text
+				return conf.generic_sorter(o)
+			end
+			return conf.file_sorter(o)
+		end,
+		-- grep: rg matches the pattern, and the prompt holds rg flags; exact applies only after <M-f>
+		exact_allowed = function(bufnr)
+			if o.separator then
+				return refine.filtered(bufnr) ~= nil
+			end
+			return true
+		end,
+	})
 end
 
 return M
