@@ -28,7 +28,7 @@ CONTENTS                                               *genja-finder*
 `require('genja-finder').attach_shared_keys(map)`
                                             *genja-finder.attach_shared_keys()*
     For any picker's attach_mappings: Telemap keys (<esc> close, <F2>/<F3>
-    next/previous) and <M-f> filter.
+    next/previous), <M-f> filter and <BS> undo.
 
 `require('genja-finder').enhance(picker)`             *genja-finder.enhance()*
     Wrap a picker function so it opens with the keys of
@@ -58,6 +58,8 @@ CONTENTS                                               *genja-finder*
     <C-p>   toggle the preview (off by default)
     <M-f>   filter: fuzzy-match within the listed results on a fresh prompt;
             again narrows further. <M-r> <M-i> <F1> <M-c> keep the search
+    <BS>    on an empty prompt: undo the last <M-f>, back to its results
+            and text; otherwise deletes a character
     <M-F>   live find only: popup for a file name part; lists only files
             whose name contains it (case-insensitive, `*.ahk` is a glob)
     <M-g>   live grep only: cycle a file filter

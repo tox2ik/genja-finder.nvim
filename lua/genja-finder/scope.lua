@@ -20,6 +20,7 @@
 --         <M-f> filter: freeze the listed results and fuzzy-match within them on a fresh prompt;
 --               press again to narrow further. The search moves into the prompt prefix (`foo > `).
 --               <M-r>, <M-i>, <F1> and <M-c> still act on that search, not on the filter text.
+--         <BS>  on an empty prompt: undo the last <M-f>.
 
 ---@alias genja-finder.ScanRoot 'pwd'|'git'|'bufdir'|'home'|'arg'
 ---@alias genja-finder.ScanIgnore 'gitignore+'|'vend+mods+dist'|'unrestricted'
@@ -411,7 +412,8 @@ end
 ---Map <M-c>: command popup (see show_command), when `command` is given.
 ---Map <M-r>, <M-i> and <M-C>: each closes the picker and reopens it via `open` with the changed
 ---option (root, skip, next binary), keeping the prompt text.
----Map <M-f>: refine to a fuzzy filter over the listed results (genja-finder.refine; see M.prompt, M.filtered).
+---Map <M-f>: refine to a fuzzy filter over the listed results, <BS> on an empty prompt undoes it
+---(genja-finder.refine; see M.prompt, M.filtered).
 ---Map <F1>: close and open the other picker (`other`: 'grep' or 'find') with the same
 ---root, skip, file_ignore_patterns, origin window and search text (grep's extra args after the separator are dropped).
 ---@param map genja-finder.TelescopeMap
@@ -473,15 +475,14 @@ function M.map(map, o, open, other, command)
 		reopen(bufnr, { ignore = M.cycle(M.ignores, o.ignore) })
 	end, { desc = 'scan: cycle gitignore+/vend+mods+dist/unrestricted' })
 
-	-- genja-finder.refine's filter, with a sorter per picker
-	map({ 'i', 'n' }, '<M-f>', function(bufnr)
+	-- genja-finder.refine's <M-f> filter and <BS> undo, with a sorter per picker
+	require('genja-finder.refine').attach(map, function()
 		local conf = require('telescope.config').values
-		local sorter = conf.file_sorter(o)
 		if o.separator then -- grep: file + line text
-			sorter = conf.generic_sorter(o)
+			return conf.generic_sorter(o)
 		end
-		require('genja-finder.refine').filter(bufnr, sorter)
-	end, { desc = 'scan: filter the listed results (fuzzy, fresh prompt)' })
+		return conf.file_sorter(o)
+	end)
 end
 
 return M
