@@ -16,7 +16,7 @@ code or history: confirm or delete. `Hint:` is a working note for Claude.
 - `scope.lua`: shared roots, skip states, titles, layout, `<M-r>`/`<M-i>`/`<F1>`/`<M-c>`/`<M-C>`/`<C-p>`/`<M-f>` maps.
 - `grep.lua`: one command builder per backend, `<M-g>` filters, status text.
 - `find.lua`: file list command per backend.
-- `refine.lua`: `<M-f>` filter and `<BS>` undo for any picker (`filter`, `undo`, `toggle_exact`, `attach(map, { sorter?, exact_allowed? })`), `decorate(picker, attach?)`; holds the frozen search (`filtered`).
+- `refine.lua`: `<M-f>` filter, `<M-x>` exclude and `<BS>` undo for any picker (`filter`, `exclude`, `undo`, `toggle_exact`, `attach(map, { sorter?, exact_allowed? })`), `decorate(picker, attach?)`; holds the frozen search (`filtered`).
 - `telemap.lua`: `Telemap(map)`, the shared picker keys (`<esc>`, `<F2>`/`<F3>`), moved here from the config's `lua/genja/fn/telemap.lua`.
 - `init.lua` `attach_shared_keys(map)` = Telemap + refine keys; `enhance(picker)` = `decorate(picker, attach_shared_keys)`, for pickers elsewhere in the config.
 - Option or key changes go into README.md and `doc/genja-finder.txt` too.
@@ -65,6 +65,7 @@ code or history: confirm or delete. `Hint:` is a working note for Claude.
 - `<M-C>` cycles through the command (binary) list of the current picker, reopening with the next one.
 - Grep shows a status at the end of the prompt (`⟳ N …`, `N hits`).
 - `<M-f>` freezes results and fuzzy-filters within them; `<M-F>` (find) filters by a file name part.
+- `<M-x>` excludes the entries that contain any typed word (smartcase), from `finder.results` (static finders, or after `<M-f>`); a level like `<M-f>`, prefix `!word > `.
 - `<BS>` on an empty prompt undoes the last `<M-f>` (finder, sorter, prefix, title and text kept per step in `refine.lua`).
 - `<M-n>` switches fuzzy/exact (telescope's substring matcher). New `<M-f>` steps start in the current mode; undo restores the step's mode. Live grep: only after `<M-f>`.
 - Toggles read the prompt text from the prompt buffer at keypress, so the latest input carries over.

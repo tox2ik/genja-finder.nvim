@@ -5,6 +5,8 @@
 --         <BS>  on an empty prompt: undo the last <M-f>, restoring the results and its text.
 --         <M-n> switch between fuzzy and exact match (each word as typed); new <M-f> levels
 --               start in the current mode, <BS> undo restores the mode of the earlier level.
+--         <M-x> exclude: drop the entries containing any typed word (smartcase), fresh prompt;
+--               the prefix shows `!foo > `. <BS> on an empty prompt undoes it like <M-f>.
 --
 -- In a picker's attach_mappings:  require('genja-finder.refine').attach(map)
 -- Around a picker function:       require('genja-finder.refine').decorate(builtin.oldfiles)
@@ -166,6 +168,81 @@ function M.filter(bufnr, sorter)
 	})
 end
 
+---Does `text` contain any of `words`? Smartcase: case-sensitive only when the word has a capital.
+---@param text string
+---@param words string[]
+---@return boolean
+local function contains_any(text, words)
+	for _, word in ipairs(words) do
+		local hay = text
+		local needle = word
+		if word:lower() == word then
+			hay = text:lower()
+		end
+		if hay:find(needle, 1, true) then
+			return true
+		end
+	end
+	return false
+end
+
+---Drop the entries of the picker in `bufnr` that contain any word of the prompt, on a fresh prompt.
+---Works on the full listed set (static finders, and the results after <M-f>); <BS> undoes it.
+---@param bufnr integer prompt buffer
+function M.exclude(bufnr)
+	local picker = require('telescope.actions.state').get_current_picker(bufnr)
+	local text = M.text(bufnr)
+	local words = vim.split(vim.trim(text), '%s+', { trimempty = true })
+	if #words == 0 then
+		vim.notify(SRC .. 'type the words to exclude, then <M-x>', vim.log.levels.INFO)
+		return
+	end
+	local all = picker.finder.results
+	if type(all) ~= 'table' then
+		vim.notify(SRC .. 'exclude needs a fixed result list; press <M-f> first', vim.log.levels.INFO)
+		return
+	end
+
+	local stack, mode = state(bufnr)
+	table.insert(stack, {
+		finder = picker.finder,
+		sorter = picker.sorter,
+		prefix = picker.prompt_prefix,
+		text = text,
+		exact = mode.exact,
+		fuzzy = mode.fuzzy,
+	})
+
+	local kept = {}
+	for _, entry in ipairs(all) do
+		local hay = entry.ordinal
+		if type(hay) ~= 'string' then
+			hay = tostring(entry.value)
+		end
+		if not contains_any(hay, words) then
+			table.insert(kept, entry)
+		end
+	end
+
+	local finder = require('telescope.finders').new_table({
+		results = kept,
+		entry_maker = function(entry) return entry end,
+	})
+	-- prefix like <M-f>'s, marked with `!`: `foo > !bar > `
+	local default_prefix = require('telescope.config').values.prompt_prefix
+	local earlier = ''
+	if picker.prompt_prefix ~= default_prefix then
+		earlier = picker.prompt_prefix
+	end
+	show_title(picker, bufnr)
+	-- the old finder stays in the level for <BS>; refresh keeps the current sorter
+	picker:refresh(finder, {
+		reset_prompt = true,
+		new_prefix = earlier .. '!' .. vim.trim(text) .. ' ' .. default_prefix,
+		prefix_hl_group = 'TelescopePromptPrefix',
+	})
+end
+
 ---Undo the last <M-f> of the picker in `bufnr`: its finder, sorter, mode, prefix, title and prompt text.
 ---@param bufnr integer prompt buffer
 ---@return boolean undone false when nothing was filtered
@@ -213,8 +290,8 @@ function M.toggle_exact(bufnr, make_sorter)
 	picker:refresh(nil, { reset_prompt = false })
 end
 
----Map the refine keys: <M-f> filter, <BS> on an empty prompt undoes the last <M-f>,
----<M-n> switches between fuzzy and exact match.
+---Map the refine keys: <M-f> filter, <M-x> exclude, <BS> on an empty prompt undoes the last
+---<M-f>/<M-x>, <M-n> switches between fuzzy and exact match.
 ---@param map genja-finder.TelescopeMap
 ---@param opts? genja-finder.RefineOpts
 function M.attach(map, opts)
@@ -242,6 +319,10 @@ function M.attach(map, opts)
 		end
 		M.toggle_exact(bufnr, opts.sorter)
 	end, { desc = 'refine: switch between fuzzy and exact match' })
+
+	map({ 'i', 'n' }, '<M-x>', function(bufnr)
+		M.exclude(bufnr)
+	end, { desc = 'refine: exclude entries with the typed words (fresh prompt)' })
 end
 
 ---Wrap a picker function (e.g. telescope.builtin.oldfiles) so it opens with extra keys.
