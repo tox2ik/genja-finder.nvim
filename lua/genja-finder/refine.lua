@@ -87,6 +87,12 @@ local function show_title(picker, bufnr)
 	end
 end
 
+---Show the prompt title of the picker in `bufnr` for its refine state; for callers that change prompt_title.
+---@param bufnr integer prompt buffer
+function M.show_title(bufnr)
+	show_title(require('telescope.actions.state').get_current_picker(bufnr), bufnr)
+end
+
 ---Replace the picker's sorter (the old one stays usable: _init runs again when it comes back).
 ---@param picker table
 ---@param sorter table
