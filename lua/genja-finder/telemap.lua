@@ -2,10 +2,11 @@
 -- lua/genja/fn/telemap.lua). Use from attach_mappings: require('genja-finder.telemap').Telemap(map).
 -- require('genja-finder').attach_shared_keys(map) maps these plus the refine keys (genja-finder.refine).
 
----Shared picker keys: <esc> closes, <F2>/<F3> move the selection.
+---Shared picker keys: <esc> closes, <F2>/<F3> move the selection, <C-]> opens the entry.
 ---@param map genja-finder.TelescopeMap
 local function Telemap(map)
 	map({ 'i', 'n' }, '<esc>',  require'telescope.actions'.close,                   { desc = 'Telescope: close' })
+	map({ 'i', 'n' }, '<C-]>',  require'telescope.actions'.select_default,          { desc = 'Telescope: open file' })
 	map({ 'i', 'n' }, '<F3>',   require'telescope.actions'.move_selection_previous, { desc = 'Telescope: prev' })
 	map({ 'i', 'n' }, '<S-F3>', require'telescope.actions'.move_selection_previous, { desc = 'Telescope: prev' })
 	map({ 'i', 'n' }, '<F2>',   require'telescope.actions'.move_selection_next,     { desc = 'Telescope: next' })
