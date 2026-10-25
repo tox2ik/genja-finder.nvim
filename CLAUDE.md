@@ -41,6 +41,7 @@ code or history: confirm or delete. `Hint:` is a working note for Claude.
 ## Root and skip states
 
 - `<M-r>` cycles the root: `pwd` > `…/.git` > `bufdir` > `home`. Option values: `pwd`, `git`, `bufdir`, `home`.
+- `<M-Up>` rescans in the parent of the scanned dir as a one-off: the root, its title label and the `<M-r>` cycle don't change (`o.one_off` keeps `prepare()` from making it root `arg`); `<M-r>` clears it.
 - `<M-i>` cycles the skip state: `gitignore+` (default) > `vend+mods+dist` > `unrestricted`.
 - `exclude` = node_modules, vendor, dist; `exclude_files` = `*.min.js`, `*.min.css`. The config spec adds `go/pkg/mod`.
 - Hidden files: off in the config spec.

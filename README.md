@@ -14,6 +14,7 @@ In both pickers:
 | key | does |
 |---|---|
 | `<M-r>` | cycle where the scan starts: pwd > …/.git > bufdir > home; a `cwd` passed to the picker is `arg`, first in the cycle |
+| `<M-Up>` | one-off: rescan in the parent of the scanned dir; the root and the `<M-r>` cycle stay, `<M-r>` goes on from the root |
 | `<M-i>` | cycle what is skipped: gitignore+ > vend+mods+dist > unrestricted |
 | `<F1>` | switch between live grep and live find, keeping root (and an explicit `cwd`), skip and search text |
 | `<M-c>` | popup with the command being run; `y` copies it |

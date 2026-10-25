@@ -5,6 +5,7 @@
 --
 --         <M-r> cycle root (pwd > …/.git > bufdir > home), shown as `from:<root>`; a `cwd` passed
 --               by the caller is root `arg`, first in the cycle,
+--         <M-Up> one-off: rescan in the parent of the scanned dir; root and the <M-r> cycle stay
 --         <M-i> cycle what is excluded from the scan (gitignore+ > vend+mods+dist > unrestricted):
 --               gitignore+     (default) skips what .gitignore/.ignore list, plus node_modules, vendor and dist
 --                              and *.min.js / *.min.css files (`exclude`, `exclude_files`).
@@ -37,6 +38,7 @@
 ---@field root? genja-finder.ScanRoot     where the scan starts (default 'pwd')
 ---@field cwd? string|false        explicit directory: scanned as root 'arg', kept in the <M-r> cycle
 ---@field arg_dir? string          the caller's cwd, for root 'arg' (set internally, kept on reopen)
+---@field one_off? boolean         cwd came from <M-Up>: don't turn it into root 'arg' (set internally, <M-r> clears it)
 ---@field hidden? boolean          include dotfiles (default true)
 ---@field ignore? genja-finder.ScanIgnore what is excluded from the scan (default 'gitignore+')
 ---@field exclude? string[]        names excluded in 'gitignore+' and 'vend+mods+dist' (default node_modules, vendor, dist)
@@ -50,6 +52,8 @@
 ---@field attach? fun(map: genja-finder.TelescopeMap) extra picker keys, e.g. your own shared mappings
 ---@field origin_win? integer      window the picker was opened from (set internally, kept on reopen)
 ---@field origin_pwd? string       :pwd when the picker was first opened (set internally, kept on reopen)
+
+local SRC = 'genja-finder/scope.lua: '
 
 local M = {}
 
@@ -265,7 +269,7 @@ function M.prepare(o)
 
 	-- first open with a cwd from the caller; reopens carry arg_dir already, and their cwd is
 	-- the resolved root's dir, so it only counts when it differs from that
-	local from_caller = o.arg_dir == nil and o.cwd and o.root ~= 'arg'
+	local from_caller = o.arg_dir == nil and o.cwd and o.root ~= 'arg' and not o.one_off
 	if from_caller and not same_dir(o.cwd, M.resolve_root(o.root, o.origin_win)) then
 		o.arg_dir = o.cwd
 		o.root = 'arg'
@@ -444,7 +448,7 @@ function M.map(map, o, open, other, command)
 			actions.close(bufnr)
 			vim.schedule(function()
 				M.switch[other]() {
-					root = o.root, cwd = o.cwd, arg_dir = o.arg_dir, -- arg_dir: keeps 'arg' in the <M-r> cycle
+					root = o.root, cwd = o.cwd, arg_dir = o.arg_dir, one_off = o.one_off, -- arg_dir: keeps 'arg' in the <M-r> cycle
 					ignore = o.ignore, hidden = o.hidden, exclude = o.exclude, exclude_files = o.exclude_files,
 					ivy = o.ivy, show_preview = o.show_preview, origin_win = o.origin_win, origin_pwd = o.origin_pwd, default_text = prompt,
 					file_ignore_patterns = o.file_ignore_patterns,
@@ -469,8 +473,19 @@ function M.map(map, o, open, other, command)
 	end, { desc = 'scan: toggle preview' })
 
 	map({ 'i', 'n' }, '<M-r>', function(bufnr)
-		reopen(bufnr, { root = M.cycle(M.root_cycle(o), o.root), cwd = false })
+		reopen(bufnr, { root = M.cycle(M.root_cycle(o), o.root), cwd = false, one_off = false })
 	end, { desc = 'scan: cycle root pwd/git/bufdir/home' })
+
+	-- one-off: the parent dir isn't added to the <M-r> cycle; <M-r> goes on from o.root
+	map({ 'i', 'n' }, '<M-Up>', function(bufnr)
+		local dir = vim.fs.normalize(o.cwd):gsub('/$', '')
+		local parent = vim.fs.dirname(dir)
+		if not parent or same_dir(parent, dir) then
+			vim.notify(SRC .. 'already at the top: ' .. M.display_path(dir), vim.log.levels.INFO)
+			return
+		end
+		reopen(bufnr, { cwd = parent, one_off = true })
+	end, { desc = 'scan: parent dir (one-off)' })
 
 	map({ 'i', 'n' }, '<M-i>', function(bufnr)
 		reopen(bufnr, { ignore = M.cycle(M.ignores, o.ignore) })

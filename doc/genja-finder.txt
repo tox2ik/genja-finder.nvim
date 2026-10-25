@@ -50,6 +50,8 @@ CONTENTS                                               *genja-finder*
 
     <M-r>   cycle root: pwd, …/.git, bufdir, home (and arg, first, when a
             cwd was passed)
+    <M-Up>  one-off: rescan in the parent of the scanned dir; the root and
+            the <M-r> cycle stay, <M-r> goes on from the root
     <M-i>   cycle skip set: gitignore+, vend+mods+dist, unrestricted
     <F1>    switch live grep <-> live find, keeping root (or cwd), skip and text
     <M-c>   popup with the command being run; `y` copies it, <M-c> closes
