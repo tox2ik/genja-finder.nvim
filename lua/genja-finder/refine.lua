@@ -309,26 +309,25 @@ function M.attach(map, opts)
 			sorter = opts.sorter()
 		end
 		M.filter(bufnr, sorter)
-	end, { desc = 'refine: filter the listed results (fresh prompt)' })
+	end, { desc = 'refine: more' })
 
 	map('i', '<BS>', function(bufnr)
 		if M.text(bufnr) == '' and M.undo(bufnr) then
 			return
 		end
 		vim.api.nvim_feedkeys(vim.keycode('<BS>'), 'n', false)
-	end, { desc = 'refine: undo the last filter on an empty prompt, else delete a character' })
+	end, { desc = 'refine: <BS> or undo refine' })
 
 	map({ 'i', 'n' }, '<M-n>', function(bufnr)
 		if opts.exact_allowed and not opts.exact_allowed(bufnr) then
-			vim.notify(SRC .. 'exact match works on filtered results; press <M-f> first', vim.log.levels.INFO)
 			return
 		end
 		M.toggle_exact(bufnr, opts.sorter)
-	end, { desc = 'refine: switch between fuzzy and exact match' })
+	end, { desc = 'refine: switch fuzzy or exact' })
 
 	map({ 'i', 'n' }, '<M-x>', function(bufnr)
 		M.exclude(bufnr)
-	end, { desc = 'refine: exclude entries with the typed words (fresh prompt)' })
+	end, { desc = 'refine: exclude' })
 end
 
 ---Wrap a picker function (e.g. telescope.builtin.oldfiles) so it opens with extra keys.
