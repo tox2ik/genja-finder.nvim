@@ -28,7 +28,8 @@
 ---@alias genja-finder.ScanIgnore 'gitignore+'|'vend+mods+dist'|'unrestricted'
 
 ---The `map` that telescope passes to attach_mappings(prompt_bufnr, map).
----@alias genja-finder.TelescopeMap fun(mode: 'i'|'n'|('i'|'n')[], lhs: string, action: string|table|fun(prompt_bufnr: integer), opts?: vim.keymap.set.Opts)
+---@alias genja-finder.TelescopeMap fun(mode: 'i'|'n'|('i'|'n')[], lhs: string, action: string|table|fun(prompt_bufnr: integer)|false, opts?: vim.keymap.set.Opts)
+-- action false: the key counts as mapped and telescope skips its default for it
 
 ---Options shared by the live pickers.
 ---@class genja-finder.ScanOpts

@@ -8,8 +8,14 @@
 ---@class genja-finder.Opts : genja-finder.ScanOpts
 ---@field grep? genja-finder.GrepOpts  live grep only (binary, separator, min_chars, filters, ...)
 ---@field find? genja-finder.FindOpts  live find only (binary, follow)
+---@field unmap? { [1]: string, [2]: string }[] telescope default keys to switch off in pickers
+---  that get attach_shared_keys, e.g. { { 'i', '<C-x>' } }
 
 local M = {}
+
+---{ mode, lhs } pairs attach_shared_keys switches off; from setup({ unmap = ... }).
+---@type { [1]: string, [2]: string }[]
+M.unmap = {}
 
 ---Merge `opts` into the defaults. Optional: the pickers work without it.
 ---@param opts? genja-finder.Opts
@@ -21,7 +27,8 @@ function M.setup(opts)
 
 	grep.defaults = vim.tbl_extend('force', grep.defaults, opts.grep or {})
 	find.defaults = vim.tbl_extend('force', find.defaults, opts.find or {})
-	opts.grep, opts.find = nil, nil
+	M.unmap = opts.unmap or {}
+	opts.grep, opts.find, opts.unmap = nil, nil, nil
 	scope.defaults = vim.tbl_extend('force', scope.defaults, opts)
 end
 
@@ -38,6 +45,10 @@ function M.live_find(opts) require('genja-finder.find').live_find(opts) end
 function M.attach_shared_keys(map)
 	require('genja-finder.telemap').Telemap(map)
 	require('genja-finder.refine').attach(map)
+	-- a key mapped to false in attach_mappings counts as taken: telescope skips its default
+	for _, pair in ipairs(M.unmap) do
+		map(pair[1], pair[2], false)
+	end
 end
 
 ---Wrap a picker function so it opens with M.attach_shared_keys's keys, e.g. enhance(builtin.oldfiles).

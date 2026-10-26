@@ -49,6 +49,7 @@ that doesn't pass its opts to `pickers.new` gets nothing; call `attach_shared_ke
 		exclude = { 'node_modules', 'vendor', 'dist' },
 		exclude_files = { '*.min.js', '*.min.css' },
 		attach = function(map) --[[ extra picker keys ]] end,
+		unmap = { { 'i', '<C-x>' } }, -- telescope defaults off in attach_shared_keys pickers
 		grep = { min_chars = 2 },
 		find = { follow = false, min_chars = 2, max_results = 15000 },
 	},

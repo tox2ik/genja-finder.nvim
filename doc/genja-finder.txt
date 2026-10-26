@@ -88,6 +88,9 @@ Shared (|genja-finder.setup()| top level, or per call):
     ivy            ivy bottom pane layout             default true
     show_preview   preview visible at open            default false
     attach         fun(map): extra picker keys
+    unmap          { mode, lhs } pairs: telescope default keys switched off
+                   in pickers that get |genja-finder.attach_shared_keys()|,
+                   e.g. { { 'i', '<C-x>' } }  (setup() only)
     file_ignore_patterns
                    telescope's own filter, see below  default: global
 
