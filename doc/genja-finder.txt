@@ -28,7 +28,7 @@ CONTENTS                                               *genja-finder*
 `require('genja-finder').attach_shared_keys(map)`
                                             *genja-finder.attach_shared_keys()*
     For any picker's attach_mappings: Telemap keys (<esc> close, <F2>/<F3>
-    next/previous, <C-]> open), <M-f> filter, <M-x> exclude, <BS> undo and <M-n> exact match.
+    next/previous, <C-]> open entry's dir), <M-f> filter, <M-x> exclude, <BS> undo and <M-n> exact match.
 
 `require('genja-finder').enhance(picker)`             *genja-finder.enhance()*
     Wrap a picker function so it opens with the keys of

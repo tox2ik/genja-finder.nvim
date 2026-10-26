@@ -17,7 +17,7 @@ code or history: confirm or delete. `Hint:` is a working note for Claude.
 - `grep.lua`: one command builder per backend, `<M-g>` filters, status text.
 - `find.lua`: file list command per backend.
 - `refine.lua`: `<M-f>` filter, `<M-x>` exclude and `<BS>` undo for any picker (`filter`, `exclude`, `undo`, `toggle_exact`, `show_title` for callers that change `prompt_title`, `attach(map, { sorter?, exact_allowed? })`), `decorate(picker, attach?)`; holds the frozen search (`filtered`).
-- `telemap.lua`: `Telemap(map)`, the shared picker keys (`<esc>`, `<F2>`/`<F3>`, `<C-]>` opens the entry like `<CR>`), moved here from the config's `lua/genja/fn/telemap.lua`.
+- `telemap.lua`: `Telemap(map)`, the shared picker keys (`<esc>`, `<F2>`/`<F3>`, `<C-]>` opens the entry's directory, or the entry itself when it is a dir), moved here from the config's `lua/genja/fn/telemap.lua`.
 - `init.lua` `attach_shared_keys(map)` = Telemap + refine keys + `unmap` (setup option: telescope default keys mapped to `false`, so telescope skips them; the list lives commented out in the config's spec); `enhance(picker)` = `decorate(picker, attach_shared_keys)`, for pickers elsewhere in the config.
 - Option or key changes go into README.md and `doc/genja-finder.txt` too.
 
