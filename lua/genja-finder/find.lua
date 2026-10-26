@@ -5,7 +5,7 @@
 --               (after `min_chars`, at most `max_results` paths). es is skipped when Everything
 --               isn't running. The es prompt takes Everything's search syntax (ext:lua, dm:today).
 --   fd, rg      fuzzy match over the whole file list, listed once.
--- Layout: ivy bottom pane like the old `Telescope finn` (tg.look; ivy = false: global layout).
+-- Layout: ivy bottom pane like the old `Telescope finn` (scope.look; ivy = false: global layout).
 -- Preview hidden by default, <C-p> toggles it (file shown from the top).
 --
 -- In the picker: <M-r>, <M-i>, <F1>, <M-c>, <M-C>, <C-p>, <M-f>, same as live grep (see genja-finder/scope.lua).
@@ -17,7 +17,7 @@
 
 local SRC = 'genja-finder/find.lua: '
 
-local tg = require 'genja-finder.scope'
+local scope = require('genja-finder.scope')
 
 ---@class genja-finder.FindOpts : genja-finder.ScanOpts
 ---@field follow? boolean          follow symlinks (default false)
@@ -73,9 +73,10 @@ local find_builders = {
 			for _, f in ipairs(o.exclude_files) do vim.list_extend(cmd, { '--exclude', f }) end
 		end
 		local glob, typed = name_glob(o)
-		if glob then -- the pattern matches the file name only
-			vim.list_extend(cmd, typed and { '--ignore-case', '--glob', '--', glob }
-				or { '--ignore-case', '--fixed-strings', '--', o.name })
+		if typed then -- the pattern matches the file name only
+			vim.list_extend(cmd, { '--ignore-case', '--glob', '--', glob })
+		elseif glob then
+			vim.list_extend(cmd, { '--ignore-case', '--fixed-strings', '--', o.name })
 		end
 		return cmd
 	end,
@@ -141,8 +142,7 @@ local function path_filter(o)
 	local files = {}
 	if o.ignore ~= 'unrestricted' then
 		for _, d in ipairs(o.exclude) do
-			local dir = d:gsub('^%*%*/', '')
-			dirs[#dirs + 1] = dir
+			dirs[#dirs + 1] = (d:gsub('^%*%*/', ''))
 		end
 		for _, f in ipairs(o.exclude_files) do files[#files + 1] = name_pattern(f) end
 	end
@@ -168,8 +168,8 @@ function M.live_find(opts)
 	local conf = require('telescope.config').values
 
 	---@type genja-finder.FindOpts
-	local o = vim.tbl_extend('force', tg.defaults, M.defaults, opts or {})
-	local exe, name = tg.find_binary(o.binary, function(e, n)
+	local o = vim.tbl_extend('force', scope.defaults, M.defaults, opts or {})
+	local exe, name = scope.find_binary(o.binary, function(e, n)
 		local b = live_builders[o.backend or n]
 		if b and b.ready then return b.ready(e) end
 		return true
@@ -185,9 +185,9 @@ function M.live_find(opts)
 		vim.notify(SRC .. 'no command builder for ' .. name .. ', set opts.backend', vim.log.levels.ERROR)
 		return
 	end
-	tg.prepare(o)
+	scope.prepare(o)
 
-	local prompt_title, results_title = tg.titles(o, 'findz00r ' .. vim.fn.fnamemodify(exe, ':t:r'))
+	local prompt_title, results_title = scope.titles(o, 'findz00r ' .. vim.fn.fnamemodify(exe, ':t:r'))
 	if o.name and o.name ~= '' then results_title = results_title .. ' name:' .. o.name end
 
 	local file_entry = require('telescope.make_entry').gen_from_file(o) -- o.cwd set: paths relative to it
@@ -212,7 +212,7 @@ function M.live_find(opts)
 		status = function(self, st)
 			local stats = self.stats or {}
 			local hits = (stats.processed or 0) - (stats.filtered or 0)
-			if tg.filtered(self.prompt_bufnr) then -- <M-f>: fuzzy over the frozen results
+			if scope.filtered(self.prompt_bufnr) then -- <M-f>: fuzzy over the frozen results
 				return ('%d of %d'):format(hits, #(self.finder.results or {}))
 			end
 			if #vim.trim(self:_get_prompt()) < o.min_chars then return ('type %d+ chars'):format(o.min_chars) end
@@ -230,7 +230,7 @@ function M.live_find(opts)
 		sorter = conf.file_sorter(o)
 	end
 
-	tg.find(require('telescope.pickers').new(o, vim.tbl_extend('force', tg.look(o), {
+	scope.find(require('telescope.pickers').new(o, vim.tbl_extend('force', scope.look(o), {
 		prompt_title = prompt_title,
 		results_title = results_title,
 		finder = finder,
@@ -238,13 +238,17 @@ function M.live_find(opts)
 		sorter = sorter,
 		get_status_text = status,
 		attach_mappings = function(_, map)
-			tg.map(map, o, M.live_find, 'grep', command)
+			scope.map(map, o, M.live_find, 'grep', command)
 			map({ 'i', 'n' }, '<M-F>', function(bufnr)
-				local prompt = tg.prompt(bufnr)
+				local prompt = scope.prompt(bufnr)
 				require('telescope.actions').close(bufnr)
 				vim.schedule(function()
-					tg.ask('file name contains', o.name or '', function(text)
-						M.live_find(vim.tbl_extend('force', o, { default_text = prompt }, text and { name = vim.trim(text) } or {}))
+					scope.ask('file name contains', o.name or '', function(text)
+						local patch = { default_text = prompt }
+						if text then -- nil: <Esc>, keep the old name
+							patch.name = vim.trim(text)
+						end
+						M.live_find(vim.tbl_extend('force', o, patch))
 					end)
 				end)
 			end, { desc = 'find: list only files whose name contains …' })

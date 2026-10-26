@@ -53,8 +53,11 @@
 ---@field attach? fun(map: genja-finder.TelescopeMap) extra picker keys, e.g. your own shared mappings
 ---@field origin_win? integer      window the picker was opened from (set internally, kept on reopen)
 ---@field origin_pwd? string       :pwd when the picker was first opened (set internally, kept on reopen)
+---@field separator? string        grep only: between the pattern and the backend flags in the prompt
 
 local SRC = 'genja-finder/scope.lua: '
+
+local float = require('genja-util.float')
 
 local M = {}
 
@@ -63,7 +66,7 @@ M.defaults = {
 	root = 'pwd',
 	hidden = true,
 	ignore = 'gitignore+',
-	exclude = { 'node_modules', 'vendor', 'dist' , '**/go/pkg/mod' }, -- pattern works only for fd.
+	exclude = { 'node_modules', 'vendor', 'dist', '**/go/pkg/mod' }, -- the pattern works only for fd
 	exclude_files = { '*.min.js', '*.min.css' },
 	ivy = true,
 	show_preview = false, -- not `preview`: that key is telescope's own preview config
@@ -102,17 +105,19 @@ function M.cycle(list, v)
 	return list[1]
 end
 
+---@param bins string|string[]
+---@return string[]
+local function as_list(bins)
+	return (type(bins) == 'string' and { bins } or bins)
+end
+
 ---First binary of `bins` found in PATH (and accepted by `usable`, when given).
 ---@param bins string|string[]
 ---@param usable? fun(exe: string, name: string): boolean false skips to the next binary
 ---@return string? exe full path
 ---@return string? name binary without dir and extension
 function M.find_binary(bins, usable)
-	local list = bins
-	if type(bins) == 'string' then
-		list = { bins }
-	end
-	for _, b in ipairs(list) do
+	for _, b in ipairs(as_list(bins)) do
 		local exe = vim.fn.exepath(b)
 		if exe ~= '' then
 			local name = vim.fn.fnamemodify(b, ':t:r')
@@ -127,10 +132,7 @@ end
 ---@param name? string binary in use, without dir and extension
 ---@return string[]
 function M.after(bins, name)
-	local list = bins
-	if type(bins) == 'string' then
-		list = { bins }
-	end
+	local list = as_list(bins)
 	local at = 0
 	for i, b in ipairs(list) do
 		if vim.fn.fnamemodify(b, ':t:r') == name then at = i end
@@ -238,11 +240,7 @@ function M.filtered(bufnr) return require('genja-finder.refine').filtered(bufnr)
 ---@return string
 function M.prompt(bufnr)
 	local refine = require('genja-finder.refine')
-	local search = refine.filtered(bufnr)
-	if search then
-		return search
-	end
-	return refine.text(bufnr)
+	return refine.filtered(bufnr) or refine.text(bufnr)
 end
 
 ---Same directory, ignoring slash style, a trailing slash and (on Windows) case.
@@ -278,6 +276,19 @@ function M.prepare(o)
 	o.cwd = o.cwd or M.resolve_root(o.root, o.origin_win, o.arg_dir)
 end
 
+---Split a grep prompt at `sep`: the pattern, and the backend args after it (nil without `sep`).
+---@param prompt string
+---@param sep string
+---@return string pattern
+---@return string|nil rest
+function M.split_prompt(prompt, sep)
+	local at = prompt:find(sep, 1, true)
+	if not at then
+		return prompt, nil
+	end
+	return prompt:sub(1, at - 1), prompt:sub(at + #sep)
+end
+
 ---Roots <M-r> cycles through: 'arg' first when the caller passed a dir.
 ---@param o genja-finder.ScanOpts
 ---@return genja-finder.ScanRoot[]
@@ -285,9 +296,7 @@ function M.root_cycle(o)
 	if not o.arg_dir then
 		return M.roots
 	end
-	local roots = { 'arg' }
-	vim.list_extend(roots, M.roots)
-	return roots
+	return vim.list_extend({ 'arg' }, M.roots)
 end
 
 ---Prompt title `<label> <last 3 parts of the scan dir>` and results title `from:<root> <path> skip:<ignore>`.
@@ -330,7 +339,7 @@ local function close_command(bufnr)
 	local p = popups[bufnr]
 	if not p then return end
 	popups[bufnr] = nil
-	if vim.api.nvim_win_is_valid(p.win) then vim.api.nvim_win_close(p.win, true) end
+	float.close(p.win)
 	if vim.api.nvim_buf_is_valid(bufnr) then
 		pcall(vim.keymap.del, { 'i', 'n' }, 'y', { buffer = bufnr })
 	end
@@ -350,21 +359,8 @@ function M.show_command(bufnr, cmd, cwd)
 	local height = 0
 	for _, l in ipairs(lines) do height = height + math.max(1, math.ceil(vim.fn.strdisplaywidth(l) / width)) end
 
-	local buf = vim.api.nvim_create_buf(false, true)
-	vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-	vim.bo[buf].bufhidden = 'wipe'
-	local win = vim.api.nvim_open_win(buf, false, {
-		relative = 'editor',
-		style = 'minimal',
-		border = 'rounded',
-		zindex = 200,
-		title = ' command ',
-		title_pos = 'center',
-		width = width,
-		height = height,
-		row = math.floor((vim.o.lines - height) / 2) - 1,
-		col = math.floor((vim.o.columns - width) / 2),
-	})
+	local buf = float.scratch(lines)
+	local win = float.open(buf, { width = width, height = height, title = 'command', enter = false, zindex = 200, up = 1 })
 	vim.wo[win].wrap = true
 	popups[bufnr] = { win = win, buf = buf }
 
@@ -387,23 +383,13 @@ end
 ---@param default string
 ---@param done fun(text: string?)
 function M.ask(title, default, done)
-	local buf = vim.api.nvim_create_buf(false, true)
-	vim.api.nvim_buf_set_lines(buf, 0, -1, false, { default })
-	vim.bo[buf].bufhidden = 'wipe'
-	local width = math.min(vim.o.columns - 6, 50)
-	local win = vim.api.nvim_open_win(buf, true, {
-		relative = 'editor', style = 'minimal', border = 'rounded', zindex = 200,
-		title = ' ' .. title .. ' ', title_pos = 'center',
-		width = width, height = 1,
-		row = math.floor((vim.o.lines - 1) / 2) - 1,
-		col = math.floor((vim.o.columns - width) / 2),
-	})
+	local buf = float.scratch({ default })
+	local win = float.open(buf, { width = math.min(vim.o.columns - 6, 50), height = 1, title = title, zindex = 200, up = 1 })
 	local answered = false
 	local function finish(text)
 		if answered then return end
 		answered = true
-		vim.cmd.stopinsert()
-		if vim.api.nvim_win_is_valid(win) then vim.api.nvim_win_close(win, true) end
+		float.close(win)
 		vim.schedule(function() done(text) end)
 	end
 	vim.keymap.set({ 'i', 'n' }, '<CR>', function()
@@ -440,11 +426,11 @@ function M.map(map, o, open, other, command)
 	end
 
 	if other then
-		map({ 'i', 'n' }, '<f4>', function () vim.cmd [[tabedit]] end, { desc = "Finder: new tab" })
+		map({ 'i', 'n' }, '<F4>', function() vim.cmd.tabedit() end, { desc = 'scan: new tab' })
 		map({ 'i', 'n' }, '<F1>', function(bufnr)
 			local prompt = M.prompt(bufnr)
 			if o.separator then -- grep: keep the pattern only, drop `  -g …`
-				prompt = prompt:sub(1, (prompt:find(o.separator, 1, true) or 0) - 1)
+				prompt = M.split_prompt(prompt, o.separator)
 			end
 			actions.close(bufnr)
 			vim.schedule(function()
@@ -504,10 +490,7 @@ function M.map(map, o, open, other, command)
 		end,
 		-- grep: rg matches the pattern, and the prompt holds rg flags; exact applies only after <M-f>
 		exact_allowed = function(bufnr)
-			if o.separator then
-				return refine.filtered(bufnr) ~= nil
-			end
-			return true
+			return not o.separator or refine.filtered(bufnr) ~= nil
 		end,
 	})
 end

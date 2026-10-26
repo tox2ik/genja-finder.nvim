@@ -1,4 +1,3 @@
-
 -- genja-finder.grep (live grep): custom telescope live interactive full text search with rg, ack, grep, …
 -- Backends: rg, ack, GNU grep. The first one of `binary` found in PATH is used (see grep_builders).
 -- Prompt syntax: `pattern  -g *.lua -t php`  (two spaces split the pattern from extra args,
@@ -17,7 +16,7 @@
 
 local SRC = 'genja-finder/grep.lua: '
 
-local tg = require 'genja-finder.scope'
+local scope = require('genja-finder.scope')
 
 ---A named set of file globs, cycled with <M-g>.
 ---@class genja-finder.GrepFilter
@@ -188,9 +187,7 @@ local function grep_command_generator(b, exe, o)
 
 	return function(prompt)
 		if not prompt or prompt == '' then return nil end
-		local pat, rest = prompt, nil
-		local s = prompt:find(o.separator, 1, true)
-		if s then pat, rest = prompt:sub(1, s - 1), prompt:sub(s + #o.separator) end
+		local pat, rest = scope.split_prompt(prompt, o.separator)
 		if #pat < o.min_chars then return nil end
 		local cmd = vim.deepcopy(base)
 		if rest then vim.list_extend(cmd, split_args(rest)) end
@@ -204,8 +201,8 @@ function M.live_grep(opts)
 	local conf = require('telescope.config').values
 
 	---@type genja-finder.GrepOpts
-	local o = vim.tbl_extend('force', tg.defaults, M.defaults, opts or {})
-	local exe, name = tg.find_binary(o.binary)
+	local o = vim.tbl_extend('force', scope.defaults, M.defaults, opts or {})
+	local exe, name = scope.find_binary(o.binary)
 	if not exe then
 		vim.notify(SRC .. 'none of ' .. vim.inspect(o.binary) .. ' found in PATH', vim.log.levels.ERROR)
 		return
@@ -217,7 +214,7 @@ function M.live_grep(opts)
 		return
 	end
 
-	tg.prepare(o)
+	scope.prepare(o)
 
 	local entry_maker = require('telescope.make_entry').gen_from_vimgrep(o) -- after o.cwd: paths are relative to it
 	if not b.column then
@@ -225,41 +222,40 @@ function M.live_grep(opts)
 		local vimgrep = entry_maker
 		entry_maker = function(line)
 			local f, l, t = line:match '^(.-):(%d+):(.*)$'
-			return vimgrep(f and (f .. ':' .. l .. ':1:' .. t) or line)
+			if f then
+				line = f .. ':' .. l .. ':1:' .. t
+			end
+			return vimgrep(line)
 		end
 	end
-	local prompt_title, results_title = tg.titles(o, 'grepish ' .. vim.fn.fnamemodify(exe, ':t:r') .. ' text-scan')
+	local prompt_title, results_title = scope.titles(o, 'grepish ' .. vim.fn.fnamemodify(exe, ':t:r') .. ' text-scan')
 
 	local gen = grep_command_generator(b, exe, o)
 
-	tg.find(require('telescope.pickers').new(o, vim.tbl_extend('force', tg.look(o), {
+	scope.find(require('telescope.pickers').new(o, vim.tbl_extend('force', scope.look(o), {
 		prompt_title = prompt_title,
 		results_title = results_title,
-		finder = require('telescope.finders').new_job(gen,
-			entry_maker, nil, o.cwd),
+		finder = require('telescope.finders').new_job(gen, entry_maker, nil, o.cwd),
 		previewer = conf.grep_previewer(o),
 		-- activity indicator at the end of the prompt (telescope calls this while the job runs)
 		get_status_text = function(self, st)
 			local stats = self.stats or {}
 			local hits = (stats.processed or 0) - (stats.filtered or 0)
-			if tg.filtered(self.prompt_bufnr) then -- <M-f>: fuzzy over the frozen hits
+			if scope.filtered(self.prompt_bufnr) then -- <M-f>: fuzzy over the frozen hits
 				return ('%d of %d'):format(hits, #(self.finder.results or {}))
 			end
-			local pat = self:_get_prompt()
-			pat = pat:sub(1, (pat:find(o.separator, 1, true) or 0) - 1)
+			local pat = scope.split_prompt(self:_get_prompt(), o.separator)
 			if #pat < o.min_chars then return ('type %d+ chars'):format(o.min_chars) end
 			if st and not st.completed then return ('⟳ %d …'):format(hits) end
-			return ('%d hit%s'):format(hits, hits == 1 and '' or 's')
+			return ('%d hit%s'):format(hits, (hits == 1 and '' or 's'))
 		end,
 		sorter = require('telescope.sorters').highlighter_only(o),
 		attach_mappings = function(_, map)
-			tg.map(map, o, M.live_grep, 'find', gen)
+			scope.map(map, o, M.live_grep, 'find', gen)
 			map('i', '<M-g>', function(bufnr)
-				if tg.filtered(bufnr) then return end -- the prompt holds the filter, not the pattern
-				local line = tg.prompt(bufnr)
-				local pat, rest = line, ''
-				local s = line:find(o.separator, 1, true)
-				if s then pat, rest = line:sub(1, s - 1), line:sub(s + #o.separator) end
+				if scope.filtered(bufnr) then return end -- the prompt holds the filter, not the pattern
+				local pat, rest = scope.split_prompt(scope.prompt(bufnr), o.separator)
+				rest = rest or ''
 				-- which filter is in the prompt now: read it back from the text, 0 = none
 				local cur = 0
 				for i, f in ipairs(o.filters) do
@@ -271,7 +267,10 @@ function M.live_grep(opts)
 				end
 				local nxt = o.filters[cur + 1] -- nil after the last one: no filter
 				local args = vim.trim((nxt and b.filter(nxt.globs) or '') .. ' ' .. rest)
-				action_state.get_current_picker(bufnr):set_prompt(args == '' and pat or pat .. o.separator .. args)
+				if args ~= '' then
+					pat = pat .. o.separator .. args
+				end
+				action_state.get_current_picker(bufnr):set_prompt(pat)
 			end, { desc = 'grep: cycle file filter' })
 			return true
 		end,

@@ -114,6 +114,24 @@ local function fuzzy_sorter(make_sorter)
 	return require('telescope.config').values.generic_sorter({})
 end
 
+---Remember what the picker in `bufnr` has now, for <BS> (M.undo).
+---@param bufnr integer prompt buffer
+---@param picker table
+---@param text string prompt text, without the prefix
+---@return genja-finder.RefineMode mode
+local function push_level(bufnr, picker, text)
+	local stack, mode = state(bufnr)
+	table.insert(stack, {
+		finder = picker.finder,
+		sorter = picker.sorter,
+		prefix = picker.prompt_prefix,
+		text = text,
+		exact = mode.exact,
+		fuzzy = mode.fuzzy,
+	})
+	return mode
+end
+
 ---Search text the results of the picker in `bufnr` were frozen with (<M-f>), nil when not filtered.
 ---@param bufnr integer prompt buffer
 ---@return string?
@@ -131,10 +149,7 @@ end
 function M.text(bufnr)
 	local picker = require('telescope.actions.state').get_current_picker(bufnr)
 	local line = vim.api.nvim_buf_get_lines(bufnr, 0, 1, false)[1] or ''
-	local prefix = ''
-	if picker and picker.prompt_prefix then
-		prefix = picker.prompt_prefix
-	end
+	local prefix = (picker and picker.prompt_prefix or '')
 	if prefix ~= '' and line:sub(1, #prefix) == prefix then
 		line = line:sub(#prefix + 1)
 	end
@@ -147,19 +162,8 @@ end
 ---@param sorter? table fuzzy sorter (default: the generic sorter)
 function M.filter(bufnr, sorter)
 	local picker = require('telescope.actions.state').get_current_picker(bufnr)
-	local stack, mode = state(bufnr)
-	table.insert(stack, {
-		finder = picker.finder,
-		sorter = picker.sorter,
-		prefix = picker.prompt_prefix,
-		text = M.text(bufnr),
-		exact = mode.exact,
-		fuzzy = mode.fuzzy,
-	})
-
-	if not sorter then
-		sorter = fuzzy_sorter()
-	end
+	local mode = push_level(bufnr, picker, M.text(bufnr))
+	sorter = sorter or fuzzy_sorter()
 	-- the new level starts in the current mode; its fuzzy sorter is kept for <M-n>
 	if mode.exact then
 		mode.fuzzy = sorter
@@ -180,12 +184,8 @@ end
 ---@return boolean
 local function contains_any(text, words)
 	for _, word in ipairs(words) do
-		local hay = text
-		local needle = word
-		if word:lower() == word then
-			hay = text:lower()
-		end
-		if hay:find(needle, 1, true) then
+		local hay = (word:lower() == word and text:lower() or text)
+		if hay:find(word, 1, true) then
 			return true
 		end
 	end
@@ -209,22 +209,11 @@ function M.exclude(bufnr)
 		return
 	end
 
-	local stack, mode = state(bufnr)
-	table.insert(stack, {
-		finder = picker.finder,
-		sorter = picker.sorter,
-		prefix = picker.prompt_prefix,
-		text = text,
-		exact = mode.exact,
-		fuzzy = mode.fuzzy,
-	})
+	push_level(bufnr, picker, text)
 
 	local kept = {}
 	for _, entry in ipairs(all) do
-		local hay = entry.ordinal
-		if type(hay) ~= 'string' then
-			hay = tostring(entry.value)
-		end
+		local hay = (type(entry.ordinal) == 'string' and entry.ordinal or tostring(entry.value))
 		if not contains_any(hay, words) then
 			table.insert(kept, entry)
 		end
@@ -236,10 +225,7 @@ function M.exclude(bufnr)
 	})
 	-- prefix like <M-f>'s, marked with `!`: `foo > !bar > `
 	local default_prefix = require('telescope.config').values.prompt_prefix
-	local earlier = ''
-	if picker.prompt_prefix ~= default_prefix then
-		earlier = picker.prompt_prefix
-	end
+	local earlier = (picker.prompt_prefix ~= default_prefix and picker.prompt_prefix or '')
 	show_title(picker, bufnr)
 	-- the old finder stays in the level for <BS>; refresh keeps the current sorter
 	picker:refresh(finder, {
@@ -280,11 +266,7 @@ function M.toggle_exact(bufnr, make_sorter)
 	local picker = require('telescope.actions.state').get_current_picker(bufnr)
 	local _, mode = state(bufnr)
 	if mode.exact then
-		local fuzzy = mode.fuzzy
-		if not fuzzy then
-			fuzzy = fuzzy_sorter(make_sorter)
-		end
-		use_sorter(picker, fuzzy)
+		use_sorter(picker, mode.fuzzy or fuzzy_sorter(make_sorter))
 		mode.exact = false
 		mode.fuzzy = nil
 	else
@@ -304,11 +286,7 @@ function M.attach(map, opts)
 	opts = opts or {}
 
 	map({ 'i', 'n' }, '<M-f>', function(bufnr)
-		local sorter = nil
-		if opts.sorter then
-			sorter = opts.sorter()
-		end
-		M.filter(bufnr, sorter)
+		M.filter(bufnr, opts.sorter and opts.sorter())
 	end, { desc = 'refine: more' })
 
 	map('i', '<BS>', function(bufnr)
@@ -325,9 +303,7 @@ function M.attach(map, opts)
 		M.toggle_exact(bufnr, opts.sorter)
 	end, { desc = 'refine: switch fuzzy or exact' })
 
-	map({ 'i', 'n' }, '<M-x>', function(bufnr)
-		M.exclude(bufnr)
-	end, { desc = 'refine: exclude' })
+	map({ 'i', 'n' }, '<M-x>', M.exclude, { desc = 'refine: exclude' })
 end
 
 ---Wrap a picker function (e.g. telescope.builtin.oldfiles) so it opens with extra keys.
@@ -337,9 +313,7 @@ end
 ---@param attach? fun(map: genja-finder.TelescopeMap) keys to add (default M.attach without options)
 ---@return fun(opts?: table)
 function M.decorate(picker, attach)
-	if not attach then
-		attach = function(map) M.attach(map) end
-	end
+	attach = attach or function(map) M.attach(map) end
 	return function(opts)
 		opts = vim.deepcopy(opts or {})
 		local caller = opts.attach_mappings

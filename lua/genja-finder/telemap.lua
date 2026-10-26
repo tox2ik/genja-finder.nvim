@@ -11,7 +11,7 @@ local function entry_dir()
 	end
 	local path = entry.path or entry.filename
 	if not path and type(entry.value) == 'string' then
-		path = entry.value
+		path = entry.value -- e.g. oldfiles, plain string pickers
 	end
 	if not path or path == '' then
 		return nil
@@ -38,12 +38,13 @@ end
 ---Shared picker keys: <esc> closes, <F2>/<F3> move the selection, <C-]> opens the entry's directory.
 ---@param map genja-finder.TelescopeMap
 local function Telemap(map)
-	map({ 'i', 'n' }, '<esc>',  require'telescope.actions'.close,                   { desc = 'Telescope: close' })
-	map({ 'i', 'n' }, '<C-]>',  open_dir,                                           { desc = 'Telescope: open dirname' })
-	map({ 'i', 'n' }, '<F3>',   require'telescope.actions'.move_selection_previous, { desc = 'Telescope: prev' })
-	map({ 'i', 'n' }, '<S-F3>', require'telescope.actions'.move_selection_previous, { desc = 'Telescope: prev' })
-	map({ 'i', 'n' }, '<F2>',   require'telescope.actions'.move_selection_next,     { desc = 'Telescope: next' })
-	map({ 'i', 'n' }, '<S-F2>', require'telescope.actions'.move_selection_next,     { desc = 'Telescope: next' })
+	local actions = require('telescope.actions')
+	map({ 'i', 'n' }, '<esc>',  actions.close,                   { desc = 'Telescope: close' })
+	map({ 'i', 'n' }, '<C-]>',  open_dir,                        { desc = 'Telescope: open dirname' })
+	map({ 'i', 'n' }, '<F3>',   actions.move_selection_previous, { desc = 'Telescope: prev' })
+	map({ 'i', 'n' }, '<S-F3>', actions.move_selection_previous, { desc = 'Telescope: prev' })
+	map({ 'i', 'n' }, '<F2>',   actions.move_selection_next,     { desc = 'Telescope: next' })
+	map({ 'i', 'n' }, '<S-F2>', actions.move_selection_next,     { desc = 'Telescope: next' })
 end
 
 return {
