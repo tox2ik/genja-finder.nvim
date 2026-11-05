@@ -41,10 +41,12 @@ that doesn't pass its opts to `pickers.new` gets nothing; call `attach_shared_ke
 
 ## Setup (lazy.nvim)
 
+Needs telescope.nvim and [genja-util.nvim](https://github.com/tox2ik/genja-util.nvim).
+
 ```lua
 {
-	dir = vim.fn.stdpath('config') .. '/plug-wip/genja-finder.nvim',
-	dependencies = { 'nvim-telescope/telescope.nvim' },
+	'tox2ik/genja-finder.nvim',
+	dependencies = { 'nvim-telescope/telescope.nvim', 'tox2ik/genja-util.nvim' },
 	opts = {
 		exclude = { 'node_modules', 'vendor', 'dist' },
 		exclude_files = { '*.min.js', '*.min.css' },
