@@ -31,7 +31,7 @@ For any other telescope picker:
 
 | call | does |
 |---|---|
-| `require('genja-finder').attach_shared_keys(map)` | in a picker's `attach_mappings`: Telemap keys (`<esc>`, `<F2>`/`<F3>`, `<C-]>` open entry's dir), `<M-f>` filter, `<M-x>` exclude, `<BS>` undo, `<M-n>` exact match |
+| `require('genja-finder').attach_shared_keys(map)` | in a picker's `attach_mappings`: Telemap keys (`<esc>`, `<F2>`/`<F3>`, `<C-]>` open entry's dir, `<M-t>` open selected in tabs, picker stays), `<M-f>` filter, `<M-x>` exclude, `<BS>` undo, `<M-n>` exact match |
 | `require('genja-finder').enhance(picker)` | wraps a picker function with those keys, e.g. `enhance(require('telescope.builtin').oldfiles)` |
 | `require('genja-finder.refine').decorate(picker, attach?)` | the same with your own keys (default: `<M-f>` only) |
 | `require('genja-finder.telemap').Telemap(map)` | Telemap keys only |
